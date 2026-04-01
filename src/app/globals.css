@@ -79,7 +79,7 @@
     @apply border-border;
   }
   body {
-    @apply text-zinc-900;
+    @apply font-sans text-zinc-900;
     /* Soft sky gradient matching the image */
     background: linear-gradient(to bottom, #a1c4e6 0%, #dbe2ee 50%, #f4f7fb 100%);
     background-attachment: fixed;
@@ -118,7 +118,7 @@
   background: var(--scrollbar-thumb-hover);
 }
 
-/* Glassmorphic panels matching ApexFlow */
+/* Shared glass panels */
 .app-shell {
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -157,4 +157,14 @@
 .radial--double--gradient--cards--top,
 .radial--double--gradient--cards--bottom {
   background-image: none;
+}
+
+@layer utilities {
+  .font-sans {
+    font-family:
+      "Plus Jakarta Sans",
+      "Manrope",
+      "Segoe UI",
+      sans-serif;
+  }
 }

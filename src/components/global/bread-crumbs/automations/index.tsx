@@ -28,6 +28,7 @@ type Props = {
 const AutomationsBreadCrumb = ({ id, automation }: Props) => {
   const router = useRouter();
   const pathname = usePathname();
+  const safePathname = pathname ?? "/dashboard";
   const { edit, enableEdit, inputRef, isPending } = useEditAutomation(id);
   const [confirmText, setConfirmText] = React.useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
@@ -38,7 +39,7 @@ const AutomationsBreadCrumb = ({ id, automation }: Props) => {
       toast("Deleted", {
         description: "Automation permanently deleted.",
       });
-      const segments = pathname.split("/");
+      const segments = safePathname.split("/");
       const redirectPath = segments.slice(0, -1).join("/") || "/dashboard";
       router.push(redirectPath);
     });

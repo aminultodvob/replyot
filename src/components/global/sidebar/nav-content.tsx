@@ -2,6 +2,7 @@
 
 import { Separator } from "@/components/ui/separator";
 import { UserPlan } from "@/types/dashboard";
+import LogoLockup from "../brand/logo-lockup";
 import { SubscriptionPlan } from "../subscription-plan";
 import Items from "./items";
 import UpgradeCard from "./upgrade";
@@ -30,12 +31,7 @@ const SidebarNavContent = ({
   return (
     <div className="flex h-full w-full flex-col gap-y-6 px-4 py-6">
       <div className="px-3 py-1">
-        <p className="font-headline text-xl font-extrabold tracking-tight text-slate-950">
-          Replyot
-        </p>
-        <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.28em] text-blue-600">
-          Your Reply Pilot
-        </p>
+        <LogoLockup logoClassName="w-[140px]" />
       </div>
       <div className="flex flex-col gap-y-1">
         <Items page={page} />

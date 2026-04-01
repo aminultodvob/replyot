@@ -141,7 +141,7 @@ const AutomationBuilder = ({
   }, [id, readiness]);
 
   React.useEffect(() => {
-    const notice = searchParams.get("onboarding_notice");
+    const notice = searchParams?.get("onboarding_notice");
     if (notice === "automation-created") {
       setSuccessNotice("automation-created");
     }
@@ -292,7 +292,7 @@ const AutomationBuilder = ({
 
   return (
     <div className="flex flex-col gap-6 pb-10">
-      <section className="relative overflow-hidden rounded-[36px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_42%,#eef6ff_100%)] px-6 py-6 shadow-[0_35px_100px_-60px_rgba(15,23,42,0.45)] lg:px-8 lg:py-7">
+      <section className="relative overflow-hidden rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,#ffffff_0%,#f8fafc_42%,#eef6ff_100%)] px-4 py-5 shadow-[0_35px_100px_-60px_rgba(15,23,42,0.45)] sm:rounded-[36px] sm:px-6 sm:py-6 lg:px-8 lg:py-7">
         <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_top_right,_rgba(59,130,246,0.14),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.12),_transparent_30%)]" />
         <div className="relative flex flex-col gap-6">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
@@ -310,7 +310,7 @@ const AutomationBuilder = ({
                   <Input
                     ref={inputRef}
                     defaultValue={automation.name}
-                    className="h-auto max-w-2xl rounded-2xl border-slate-200 bg-white/90 px-4 py-3 text-2xl font-semibold tracking-tight text-slate-950 shadow-sm focus-visible:ring-slate-300 md:text-4xl"
+                    className="h-auto w-full max-w-2xl rounded-2xl border-slate-200 bg-white/90 px-4 py-3 text-2xl font-semibold tracking-tight text-slate-950 shadow-sm focus-visible:ring-slate-300 md:text-4xl"
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
@@ -324,7 +324,7 @@ const AutomationBuilder = ({
                   />
                 ) : (
                   <>
-                    <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+                    <h1 className="max-w-3xl break-words text-3xl font-semibold tracking-tight text-slate-950 md:text-5xl">
                       {automation.name}
                     </h1>
                     <button
@@ -390,7 +390,7 @@ const AutomationBuilder = ({
               ) : null}
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+            <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto lg:justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
@@ -426,7 +426,7 @@ const AutomationBuilder = ({
                   toggleActivation({ state: !automation.active });
                 }}
                 disabled={readOnly || (!automation.active && !readiness.canGoLive) || activationPending}
-                className="rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900"
+                className="w-full rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900 sm:w-auto"
               >
                 {activationPending ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -436,7 +436,7 @@ const AutomationBuilder = ({
                 {automation.active ? "Disable" : "Go Live"}
               </Button>
               {!automation.active && !readiness.canGoLive ? (
-                <p className="w-full text-right text-xs text-slate-500">
+                <p className="w-full text-left text-xs text-slate-500 sm:text-right">
                   Complete missing checklist items to enable Go Live.
                 </p>
               ) : null}
@@ -566,7 +566,7 @@ const AutomationBuilder = ({
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.95fr)] xl:grid-cols-[minmax(0,1.85fr)_380px]">
-        <aside className="order-1 flex flex-col gap-4 lg:order-2 lg:sticky lg:top-6 lg:self-start">
+        <aside className="order-1 flex min-w-0 flex-col gap-4 lg:order-2 lg:sticky lg:top-6 lg:self-start">
           <section className="overflow-hidden rounded-[30px] border border-slate-200 bg-[linear-gradient(160deg,#ffffff_0%,#f8fafc_60%,#f0f9ff_100%)] p-5 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.4)]">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -607,7 +607,7 @@ const AutomationBuilder = ({
           </section>
         </aside>
 
-        <div className={cn("order-2 flex flex-col gap-5 lg:order-1", readOnly && "pointer-events-none opacity-70")}>
+        <div className={cn("order-2 min-w-0 flex flex-col gap-5 lg:order-1", readOnly && "pointer-events-none opacity-70")}>
           <BuilderStepCard
             stepNumber={1}
             stepId="setup"
@@ -707,7 +707,7 @@ const AutomationBuilder = ({
       </div>
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-[28px] border-slate-200 bg-white">
+        <AlertDialogContent className="rounded-[28px] border-slate-200 bg-white sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-slate-950">
               Delete automation permanently?

@@ -24,8 +24,9 @@ const DashboardLink = ({
   const { startNavigation } = useDashboardNavigationFeedback();
   const hrefString = typeof href === "string" ? href : href.toString();
   const currentUrl = React.useMemo(() => {
-    const query = searchParams.toString();
-    return query ? `${pathname}?${query}` : pathname;
+    const query = searchParams?.toString() ?? "";
+    const safePathname = pathname ?? "";
+    return query ? `${safePathname}?${query}` : safePathname;
   }, [pathname, searchParams]);
 
   const prefetch = React.useCallback(() => {

@@ -1,12 +1,13 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import LogoLockup from "@/components/global/brand/logo-lockup";
 import {
   formatBillingPrice,
   FREE_AUTOMATION_LIMIT,
   FREE_TOTAL_DELIVERY_LIMIT,
   getBillingCycleLabel,
 } from "@/lib/billing";
-import { Sparkles, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import { Sparkles, ArrowRight, ShieldCheck } from "lucide-react";
 
 type Props = {
   title: string;
@@ -25,9 +26,8 @@ const AuthShell = ({ title, description, children, footer }: Props) => {
         
         {/* Left Form Section */}
         <section className="flex flex-col justify-center p-6 sm:p-10 lg:p-14">
-          <Link href="/" className="inline-flex items-center gap-2 text-xl font-bold tracking-tight text-zinc-900">
-            <Zap size={24} className="mix-blend-multiply" fill="currentColor" />
-            Replyot
+          <Link href="/" className="inline-flex items-center">
+            <LogoLockup priority />
           </Link>
           
           <div className="mt-8 space-y-3 sm:mt-12">
@@ -85,7 +85,7 @@ const AuthShell = ({ title, description, children, footer }: Props) => {
               <div className="group relative overflow-hidden rounded-[32px] border border-blue-200 bg-gradient-to-b from-blue-50/80 to-indigo-50/80 p-6 shadow-sm transition-all hover:shadow-md">
                 <div className="relative z-10">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold uppercase tracking-widest text-blue-600">Pro Automator</p>
+                    <p className="text-sm font-bold uppercase tracking-widest text-blue-600">Replyot Pro</p>
                     <span className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-bold text-white shadow-sm">POPULAR</span>
                   </div>
                   <div className="mt-2 flex items-baseline gap-2">

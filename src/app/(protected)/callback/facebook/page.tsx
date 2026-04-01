@@ -12,7 +12,7 @@ function FacebookCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const integrationsHref = "/dashboard/integrations";
-  const code = searchParams.get("code");
+  const code = searchParams?.get("code") ?? null;
 
   useEffect(() => {
     if (code) {

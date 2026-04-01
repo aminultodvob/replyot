@@ -32,7 +32,7 @@ const SignUpForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = useMemo(
-    () => getSafeCallbackUrl(searchParams.get("callbackUrl")),
+    () => getSafeCallbackUrl(searchParams?.get("callbackUrl") ?? null),
     [searchParams]
   );
 

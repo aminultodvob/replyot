@@ -342,10 +342,10 @@ export const PostsPicker = ({
       : null;
 
   const pickerBody = (
-    <div className="flex h-full flex-col">
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h3 className="text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl">
             {label}
           </h3>
           <p className="mt-1 text-sm text-slate-500">
@@ -354,20 +354,20 @@ export const PostsPicker = ({
               : "Pick the posts this flow should watch."}
           </p>
         </div>
-        <div className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
+        <div className="w-fit rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
           {posts.length} selected
         </div>
       </div>
 
       {!data ? (
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid min-h-0 grid-cols-1 gap-3 overflow-y-auto overscroll-contain pb-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
-            <Skeleton key={index} className="aspect-square rounded-[24px]" />
+            <Skeleton key={index} className="h-[220px] rounded-[24px] sm:h-[260px]" />
           ))}
         </div>
       ) : mediaList && mediaList.length > 0 ? (
         <>
-          <div className="grid flex-1 gap-4 overflow-y-auto pr-1 md:grid-cols-3">
+          <div className="grid min-h-0 flex-1 grid-cols-1 gap-3 overflow-y-auto overscroll-contain pb-2 pr-1 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
             {mediaList.map((post) => {
               const selected = posts.some((item) => item.postid === post.id);
 
@@ -384,13 +384,13 @@ export const PostsPicker = ({
                     })
                   }
                   className={cn(
-                    "group relative overflow-hidden rounded-[26px] border bg-slate-50 text-left transition",
+                    "group relative flex min-h-[280px] flex-col overflow-hidden rounded-[22px] border bg-slate-50 text-left transition sm:min-h-[320px] sm:rounded-[26px]",
                     selected
                       ? "border-slate-950 shadow-[0_22px_55px_-35px_rgba(15,23,42,0.4)]"
                       : "border-slate-200 hover:-translate-y-0.5 hover:border-slate-300"
                   )}
                 >
-                  <div className="relative aspect-square">
+                  <div className="relative aspect-[4/3] shrink-0 sm:aspect-square">
                     <PostMediaPreview mediaUrl={post.media_url} mediaType={post.media_type} />
                     <div
                       className={cn(
@@ -414,7 +414,7 @@ export const PostsPicker = ({
                       </div>
                     ) : null}
                   </div>
-                  <div className="space-y-2 p-4">
+                  <div className="flex flex-1 flex-col space-y-2 p-3 sm:p-4">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
                       {post.media_type === "VIDEO" ? "Video" : "Post"}
                     </p>
@@ -431,7 +431,7 @@ export const PostsPicker = ({
             })}
           </div>
 
-          <div className="mt-5 flex flex-col gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-4 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:mt-5 sm:flex-row sm:items-center sm:justify-between sm:pt-5">
             <Button
               onClick={() =>
                 mutate(undefined, {
@@ -439,7 +439,7 @@ export const PostsPicker = ({
                 })
               }
               disabled={posts.length === 0}
-              className="rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900"
+              className="w-full rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900 sm:w-auto"
             >
               <Loader state={isPending}>
                 {isFacebook ? "Save selected Facebook posts" : "Save selected posts"}
@@ -513,7 +513,7 @@ export const PostsPicker = ({
         type="button"
         variant="outline"
         onClick={() => setOpen(true)}
-        className="rounded-2xl border-slate-200 bg-white px-5 text-slate-800 hover:bg-slate-50"
+        className="w-full rounded-2xl border-slate-200 bg-white px-5 text-slate-800 hover:bg-slate-50 sm:w-auto"
       >
         <ImagePlus className="size-4" />
         {label}
@@ -523,20 +523,22 @@ export const PostsPicker = ({
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent
             side="bottom"
-            className="h-[88vh] rounded-t-[28px] border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-0"
+            className="h-[92dvh] rounded-t-[28px] border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-0"
           >
-            <SheetHeader className="border-b border-slate-200 px-5 py-5 text-left">
+            <SheetHeader className="shrink-0 border-b border-slate-200 px-4 py-4 text-left sm:px-5 sm:py-5">
               <SheetTitle className="text-xl text-slate-950">{label}</SheetTitle>
               <SheetDescription className="text-sm text-slate-500">
                 Select the posts that should trigger this automation.
               </SheetDescription>
             </SheetHeader>
-            <div className="h-[calc(100%-80px)] px-5 py-5">{pickerBody}</div>
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-4 sm:px-5 sm:py-5">
+              {pickerBody}
+            </div>
           </SheetContent>
         </Sheet>
       ) : (
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-5xl rounded-[32px] border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-6 shadow-[0_40px_120px_-55px_rgba(15,23,42,0.45)]">
+          <DialogContent className="flex max-h-[92vh] max-w-[min(1180px,calc(100vw-2rem))] flex-col overflow-hidden rounded-[28px] border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 shadow-[0_40px_120px_-55px_rgba(15,23,42,0.45)] sm:rounded-[32px] sm:p-6">
             <DialogHeader className="sr-only">
               <DialogTitle>{label}</DialogTitle>
               <DialogDescription>Select the posts that should trigger this automation.</DialogDescription>
@@ -645,11 +647,11 @@ export const SetupStep = ({
                     : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300"
               )}
             >
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-xl font-semibold tracking-tight">{option.label}</p>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <p className="text-lg font-semibold tracking-tight sm:text-xl">{option.label}</p>
                 <span
                   className={cn(
-                    "rounded-full border px-2.5 py-1 text-xs font-semibold",
+                    "w-fit rounded-full border px-2.5 py-1 text-xs font-semibold",
                     optionAvailability.status === "Connected"
                       ? selected && !disabled
                         ? "border-white/25 bg-white/10 text-white"
@@ -703,7 +705,7 @@ export const SetupStep = ({
                     : "border-slate-200 bg-white hover:-translate-y-0.5 hover:border-slate-300"
               )}
             >
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-3">
                   <span
                     className={cn(
@@ -738,10 +740,10 @@ export const SetupStep = ({
                     ) : null}
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-2">
+                <div className="flex flex-row items-center gap-2 sm:flex-col sm:items-end">
                   <span
                     className={cn(
-                      "rounded-full border px-2.5 py-1 text-xs font-semibold",
+                      "rounded-full border px-2.5 py-1 text-center text-xs font-semibold",
                       triggerAvailability.status === "Connected"
                         ? selected && !disabled
                           ? "border-white/20 bg-white/10 text-white"
@@ -804,7 +806,7 @@ export const PostsStep = ({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm font-medium text-slate-500">Pick where comments should trigger.</p>
         <PostsPicker
           automationId={automationId}
@@ -876,14 +878,14 @@ export const KeywordsStep = ({
 
   return (
     <div className="space-y-5">
-      <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <p className="text-sm font-medium text-slate-500">Add words users will type.</p>
-          <div className="flex w-full gap-3 lg:w-auto lg:min-w-[360px]">
+        <div className="rounded-[28px] border border-slate-200 bg-slate-50 p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <p className="text-sm font-medium text-slate-500">Add words users will type.</p>
+          <div className="flex w-full flex-col gap-3 sm:flex-row lg:w-auto lg:min-w-[360px]">
             <Input
               value={keyword}
               placeholder="Add keyword..."
-              className="h-12 rounded-2xl border-slate-200 bg-white px-4 text-slate-900"
+              className="h-12 w-full rounded-2xl border-slate-200 bg-white px-4 text-slate-900"
               onChange={onValueChange}
               onKeyDown={(event) => {
                 if (event.key === "Enter") {
@@ -895,7 +897,7 @@ export const KeywordsStep = ({
             <Button
               type="button"
               onClick={() => submitKeyword()}
-              className="h-12 rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900"
+              className="h-12 rounded-2xl bg-slate-950 px-5 text-white hover:bg-slate-900 sm:w-auto"
             >
               Add keyword
             </Button>

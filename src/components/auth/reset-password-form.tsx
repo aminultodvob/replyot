@@ -13,7 +13,7 @@ import { getToastConfig, normalizeAppError } from "@/lib/feedback";
 const ResetPasswordForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = useMemo(() => searchParams.get("token") ?? "", [searchParams]);
+  const token = useMemo(() => searchParams?.get("token") ?? "", [searchParams]);
 
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);

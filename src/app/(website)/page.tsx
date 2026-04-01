@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import LogoLockup from "@/components/global/brand/logo-lockup";
 import {
   ArrowRight,
   CheckCheck,
@@ -9,7 +10,6 @@ import {
   PlugZap,
   Sparkles,
   Workflow,
-  Zap,
   PlayCircle
 } from "lucide-react";
 import Image from "next/image";
@@ -127,13 +127,7 @@ export default function Home() {
       <header className="fixed inset-x-0 top-0 z-50">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 sm:py-5">
           <div className="flex items-center gap-2">
-            <Zap className="size-6 text-zinc-900 mix-blend-multiply" fill="currentColor" />
-            <div className="flex flex-col leading-none">
-              <span className="text-lg font-bold tracking-tight text-zinc-900 sm:text-xl">Replyot</span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.24em] text-zinc-500">
-                Your Reply Pilot
-              </span>
-            </div>
+            <LogoLockup priority logoClassName="w-[150px] sm:w-[190px]" />
           </div>
           
           <nav className="hidden gap-8 text-sm font-medium text-zinc-700 md:flex">
