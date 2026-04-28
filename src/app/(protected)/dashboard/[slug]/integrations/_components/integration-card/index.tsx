@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import React from "react";
 import InlineStatus from "@/components/global/inline-status";
 import WhatsAppEmbeddedSignupButton from "@/components/global/integrations/whatsapp-embedded-signup-button";
+import WhatsAppEmbeddedSignupResponseButton from "@/components/global/integrations/whatsapp-embedded-signup-response-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -119,11 +120,17 @@ const IntegrationCard = ({
             </span>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto">
               {isWhatsApp ? (
-                <WhatsAppEmbeddedSignupButton
-                  disabled={isDeleting || readOnly}
-                  label="Reconnect"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
-                />
+                <>
+                  <WhatsAppEmbeddedSignupButton
+                    disabled={isDeleting || readOnly}
+                    label="Reconnect"
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                  />
+                  <WhatsAppEmbeddedSignupResponseButton
+                    disabled={isDeleting || readOnly}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                  />
+                </>
               ) : (
                 <Button
                   onClick={handleConnect}
@@ -196,11 +203,17 @@ const IntegrationCard = ({
           </>
         ) : (
           isWhatsApp ? (
-            <WhatsAppEmbeddedSignupButton
-              disabled={readOnly || Boolean(blockedReason)}
-              label="Connect"
-              className="w-full rounded-xl bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765cc] sm:w-auto"
-            />
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap lg:w-auto">
+              <WhatsAppEmbeddedSignupButton
+                disabled={readOnly || Boolean(blockedReason)}
+                label="Connect"
+                className="w-full rounded-xl bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765cc] sm:w-auto"
+              />
+              <WhatsAppEmbeddedSignupResponseButton
+                disabled={readOnly || Boolean(blockedReason)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+              />
+            </div>
           ) : (
             <Button
               onClick={handleConnect}

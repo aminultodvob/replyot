@@ -951,6 +951,74 @@ export const completeWhatsAppEmbeddedSignup = async (input: {
   }
 };
 
+const getStringField = (value: unknown, key: string) => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const fieldValue = (value as Record<string, unknown>)[key];
+  return typeof fieldValue === "string" && fieldValue.trim().length > 0
+    ? fieldValue.trim()
+    : null;
+};
+
+const parseWhatsAppEmbeddedSignupResponse = (rawResponse: string) => {
+  const trimmed = rawResponse.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    const payload = Array.isArray(parsed) ? parsed[0] : parsed;
+    const data =
+      payload && typeof payload === "object"
+        ? (payload as { data?: unknown }).data
+        : null;
+    const phoneNumberId =
+      getStringField(data, "phone_number_id") ??
+      getStringField(payload, "phone_number_id");
+    const wabaId =
+      getStringField(data, "waba_id") ?? getStringField(payload, "waba_id");
+
+    if (phoneNumberId && wabaId) {
+      return { phoneNumberId, wabaId };
+    }
+  } catch {
+    const phoneNumberMatch = trimmed.match(
+      /"phone_number_id"\s*:\s*"([^"]+)"/
+    );
+    const wabaMatch = trimmed.match(/"waba_id"\s*:\s*"([^"]+)"/);
+
+    if (phoneNumberMatch?.[1] && wabaMatch?.[1]) {
+      return {
+        phoneNumberId: phoneNumberMatch[1],
+        wabaId: wabaMatch[1],
+      };
+    }
+  }
+
+  return null;
+};
+
+export const completeWhatsAppEmbeddedSignupFromResponse = async (
+  rawResponse: string
+) => {
+  const parsed = parseWhatsAppEmbeddedSignupResponse(rawResponse);
+
+  if (!parsed) {
+    return {
+      status: 400 as const,
+      data: {
+        message:
+          "Paste the Embedded Signup JSON response that includes phone_number_id and waba_id.",
+      },
+    };
+  }
+
+  return completeWhatsAppEmbeddedSignup(parsed);
+};
+
 export const deleteIntegration = async (integrationId: string) => {
   const user = await onCurrentUser();
 
