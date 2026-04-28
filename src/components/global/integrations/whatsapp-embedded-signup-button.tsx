@@ -105,6 +105,11 @@ const isEmbeddedSignupEvent = (payload: unknown): payload is {
   );
 };
 
+const getEmbeddedSignupEvent = (payload: unknown) => {
+  const candidate = Array.isArray(payload) ? payload[0] : payload;
+  return isEmbeddedSignupEvent(candidate) ? candidate : null;
+};
+
 export default function WhatsAppEmbeddedSignupButton({
   disabled = false,
   label,
@@ -146,14 +151,15 @@ export default function WhatsAppEmbeddedSignupButton({
         }
       }
 
-      if (!isEmbeddedSignupEvent(payload)) {
+      const embeddedSignupEvent = getEmbeddedSignupEvent(payload);
+      if (!embeddedSignupEvent) {
         return;
       }
 
-      if (payload.type === "FINISH") {
+      if (embeddedSignupEvent.type === "FINISH") {
         window.removeEventListener("message", handleMessage);
-        const phoneNumberId = payload.data?.phone_number_id;
-        const wabaId = payload.data?.waba_id;
+        const phoneNumberId = embeddedSignupEvent.data?.phone_number_id;
+        const wabaId = embeddedSignupEvent.data?.waba_id;
 
         if (!phoneNumberId || !wabaId) {
           toast("WhatsApp connect failed", {
@@ -187,7 +193,7 @@ export default function WhatsAppEmbeddedSignupButton({
         return;
       }
 
-      if (payload.type === "CANCEL") {
+      if (embeddedSignupEvent.type === "CANCEL") {
         window.removeEventListener("message", handleMessage);
         toast("WhatsApp signup cancelled", {
           description: "You can restart the Meta connection flow any time.",
@@ -196,7 +202,7 @@ export default function WhatsAppEmbeddedSignupButton({
         return;
       }
 
-      if (payload.type === "ERROR") {
+      if (embeddedSignupEvent.type === "ERROR") {
         window.removeEventListener("message", handleMessage);
         toast("WhatsApp signup failed", {
           description: "Meta returned an error while connecting the number.",
