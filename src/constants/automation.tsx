@@ -1,4 +1,5 @@
-import { Comment, PlaneBlue, TinyInstagram } from "@/icons";
+import { Comment, PlaneBlue } from "@/icons";
+import { MessageCircleMore } from "lucide-react";
 import { v4 } from "uuid";
 
 export type AutomationListenerProps = {
@@ -21,7 +22,7 @@ export type AutomationChannelOption = {
   id: string;
   label: string;
   description: string;
-  value: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  value: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
 };
 
 export const AUTOMATION_CHANNELS: AutomationChannelOption[] = [
@@ -37,6 +38,12 @@ export const AUTOMATION_CHANNELS: AutomationChannelOption[] = [
     description: "Use Facebook Page comment automations.",
     value: "FACEBOOK_MESSENGER",
   },
+  {
+    id: v4(),
+    label: "WhatsApp Business",
+    description: "Use WhatsApp message automations.",
+    value: "WHATSAPP",
+  },
 ];
 
 export const AUTOMATION_TRIGGERS: AutomationsTriggerProps[] = [
@@ -50,8 +57,8 @@ export const AUTOMATION_TRIGGERS: AutomationsTriggerProps[] = [
   {
     id: v4(),
     label: "Incoming DM",
-    icon: <TinyInstagram />,
-    description: "Trigger when an incoming DM matches a keyword (Instagram only).",
+    icon: <MessageCircleMore className="size-4" />,
+    description: "Trigger when an incoming DM matches a keyword (Instagram or WhatsApp).",
     type: "DM",
   },
 ];

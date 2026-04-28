@@ -15,7 +15,7 @@ import { useMutationDataState } from "@/hooks/use-mutation-data";
 
 type Props = {
   id: string;
-  channel?: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  channel?: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   label?: string;
   initialPosts?: {
     postid: string;
@@ -69,6 +69,7 @@ const PostButton = ({
   initialPosts = [],
 }: Props) => {
   const isFacebook = channel === "FACEBOOK_MESSENGER";
+  const isWhatsApp = channel === "WHATSAPP";
   const integrationsHref = "/dashboard/integrations";
 
   const [open, setOpen] = React.useState(false);
@@ -102,6 +103,8 @@ const PostButton = ({
 
   const emptyMessage = isFacebook
     ? "No Facebook posts found for this Page yet."
+    : isWhatsApp
+      ? "WhatsApp automations do not use posts."
     : "No posts found!";
 
   return (
@@ -110,7 +113,11 @@ const PostButton = ({
       open={open}
       onOpenChange={setOpen}
     >
-      {open && !data ? (
+      {isWhatsApp ? (
+        <div className="flex flex-col gap-2 text-center text-sm text-text-secondary">
+          <p>WhatsApp automations use message triggers only, so no posts are required.</p>
+        </div>
+      ) : open && !data ? (
         <div className="flex flex-col gap-y-3 w-full">
           <div className="grid grid-cols-3 gap-3">
             {Array.from({ length: 6 }).map((_, index) => (
@@ -211,7 +218,10 @@ const PostButton = ({
         </div>
       ) : data?.status === 404 ? (
         <div className="flex flex-col gap-2 text-center text-text-secondary text-sm">
-          <p>{errorPayload?.message ?? "Connect Instagram first."}</p>
+          <p>
+            {errorPayload?.message ??
+              (isFacebook ? "Connect Facebook first." : "Connect Instagram first.")}
+          </p>
           <Button
             asChild
             className="bg-gradient-to-br w-full from-[#3352CC] font-medium text-white to-[#1C2D70]"

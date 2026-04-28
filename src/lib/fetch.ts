@@ -3,6 +3,7 @@ import axios from "axios";
 /** Graph API version for Instagram Platform requests (keep in sync across media, messaging, etc.). */
 export const INSTAGRAM_GRAPH_API_VERSION = "v21.0";
 export const FACEBOOK_GRAPH_API_VERSION = "v25.0";
+export const WHATSAPP_GRAPH_API_VERSION = "v25.0";
 const FACEBOOK_GRAPH_BASE_URL =
   process.env.FACEBOOK_GRAPH_BASE_URL ?? "https://graph.facebook.com";
 
@@ -17,6 +18,9 @@ const getFacebookAppId = () =>
 
 const getFacebookAppSecret = () =>
   process.env.FACEBOOK_CLIENT_SECRET ?? process.env.FACEBOOK_APP_SECRET;
+
+export const getWhatsAppSystemUserToken = () =>
+  process.env.WHATSAPP_SYSTEM_USER_TOKEN ?? process.env.META_SYSTEM_USER_TOKEN ?? "";
 
 /** Must match exactly what you add under Meta app → Instagram → OAuth redirect URIs. */
 const resolvePublicBaseUrl = () => {
@@ -381,4 +385,73 @@ export const getFacebookPagePosts = async (
       }>;
     };
   }>;
+};
+
+export const getWhatsAppPhoneNumberDetails = async (
+  phoneNumberId: string,
+  token: string
+) => {
+  const response = await axios.get(
+    `${FACEBOOK_GRAPH_BASE_URL}/${WHATSAPP_GRAPH_API_VERSION}/${phoneNumberId}`,
+    {
+      params: {
+        fields:
+          "id,display_phone_number,verified_name,quality_rating,name_status",
+      },
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  );
+
+  return response.data as {
+    id?: string;
+    display_phone_number?: string;
+    verified_name?: string;
+    quality_rating?: string;
+    name_status?: string;
+  };
+};
+
+export const subscribeAppToWhatsAppBusinessAccount = async (
+  wabaId: string,
+  token: string
+) => {
+  return await axios.post(
+    `${FACEBOOK_GRAPH_BASE_URL}/${WHATSAPP_GRAPH_API_VERSION}/${wabaId}/subscribed_apps`,
+    {},
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+};
+
+export const sendWhatsAppTextMessage = async (
+  phoneNumberId: string,
+  recipient: string,
+  prompt: string,
+  token: string
+) => {
+  return await axios.post(
+    `${FACEBOOK_GRAPH_BASE_URL}/${WHATSAPP_GRAPH_API_VERSION}/${phoneNumberId}/messages`,
+    {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: recipient,
+      type: "text",
+      text: {
+        body: prompt,
+        preview_url: false,
+      },
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
 };

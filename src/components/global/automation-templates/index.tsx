@@ -18,17 +18,18 @@ type Props = {
   availableIntegrations: {
     INSTAGRAM: boolean;
     FACEBOOK_MESSENGER: boolean;
+    WHATSAPP: boolean;
   };
   canCreate?: boolean;
   blockedReason?: string;
 };
 
 type Template = {
-  id: "IG_COMMENTS_DM" | "IG_DM" | "FB_COMMENT_REPLY";
+  id: "IG_COMMENTS_DM" | "IG_DM" | "FB_COMMENT_REPLY" | "WA_DM";
   title: string;
   description: string;
   icon: React.ReactNode;
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   trigger: "COMMENT" | "DM";
   name: string;
 };
@@ -60,6 +61,15 @@ const templates: Template[] = [
     channel: "FACEBOOK_MESSENGER",
     trigger: "COMMENT",
     name: "Facebook Comment Reply",
+  },
+  {
+    id: "WA_DM",
+    title: "Respond to WhatsApp chats",
+    description: "Auto-respond to incoming WhatsApp Business messages.",
+    icon: <MessageCircle className="size-5" />,
+    channel: "WHATSAPP",
+    trigger: "DM",
+    name: "Respond to WhatsApp",
   },
 ];
 
@@ -193,7 +203,11 @@ const AutomationTemplates = ({
             <p className="mt-2 text-sm leading-6 text-slate-600">{template.description}</p>
             <div className="mt-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-xs text-slate-500">
-                {template.channel === "FACEBOOK_MESSENGER" ? "Facebook Page" : "Instagram"}
+                {template.channel === "FACEBOOK_MESSENGER"
+                  ? "Facebook Page"
+                  : template.channel === "WHATSAPP"
+                    ? "WhatsApp Business"
+                    : "Instagram"}
               </span>
               <span className="inline-flex rounded-lg bg-[#1a73e8] px-3 py-1.5 text-xs font-medium text-white">
                 {pendingTemplate === template.id ? "Creating..." : "Use template"}
@@ -203,7 +217,11 @@ const AutomationTemplates = ({
               <p className="mt-3 text-xs leading-5 text-[#b06000]">{blockedReason}</p>
             ) : !integrationReady ? (
               <p className="mt-3 text-xs leading-5 text-[#b06000]">
-                Connect {template.channel === "FACEBOOK_MESSENGER" ? "Facebook Page" : "Instagram"} in Integrations before using this template.
+                Connect {template.channel === "FACEBOOK_MESSENGER"
+                  ? "Facebook Page"
+                  : template.channel === "WHATSAPP"
+                    ? "WhatsApp Business"
+                    : "Instagram"} in Integrations before using this template.
               </p>
             ) : null}
           </button>

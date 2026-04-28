@@ -55,6 +55,13 @@ export const getKeywordAutomation = async (
   dm: boolean,
   channel: AutomationChannel = AUTOMATION_CHANNEL.INSTAGRAM
 ) => {
+  const integrationName =
+    channel === AUTOMATION_CHANNEL.FACEBOOK_MESSENGER
+      ? INTEGRATIONS.FACEBOOK_MESSENGER
+      : channel === AUTOMATION_CHANNEL.WHATSAPP
+        ? INTEGRATIONS.WHATSAPP
+        : INTEGRATIONS.INSTAGRAM;
+
   return await db.query.automations.findFirst({
     where: eq(automations.id, automationId),
     with: {
@@ -84,17 +91,16 @@ export const getKeywordAutomation = async (
             },
           },
           integrations: {
-            where: eq(
-              integrations.name,
-              channel === AUTOMATION_CHANNEL.FACEBOOK_MESSENGER
-                ? INTEGRATIONS.FACEBOOK_MESSENGER
-                : INTEGRATIONS.INSTAGRAM
-            ),
+            where: eq(integrations.name, integrationName),
             columns: {
               token: true,
               instagramId: true,
               facebookPageId: true,
               pageName: true,
+              whatsappBusinessAccountId: true,
+              whatsappPhoneNumberId: true,
+              whatsappBusinessPhone: true,
+              whatsappDisplayName: true,
               name: true,
             },
           },
@@ -180,6 +186,23 @@ export const getInstagramAccountIntegration = async (instagramAccountId: string)
     columns: {
       token: true,
       instagramId: true,
+      userId: true,
+    },
+  });
+};
+
+export const getWhatsAppPhoneIntegration = async (phoneNumberId: string) => {
+  return await db.query.integrations.findFirst({
+    where: and(
+      eq(integrations.name, INTEGRATIONS.WHATSAPP),
+      eq(integrations.whatsappPhoneNumberId, phoneNumberId)
+    ),
+    columns: {
+      token: true,
+      whatsappBusinessAccountId: true,
+      whatsappPhoneNumberId: true,
+      whatsappBusinessPhone: true,
+      whatsappDisplayName: true,
       userId: true,
     },
   });
@@ -336,6 +359,7 @@ export const getAutomationAnalyticsForUser = async (
   const channelDeliveries: Record<AutomationChannel, number> = {
     INSTAGRAM: 0,
     FACEBOOK_MESSENGER: 0,
+    WHATSAPP: 0,
   };
   const automationDeliveries = new Map<string, { name: string; deliveries: number }>();
 
@@ -423,6 +447,10 @@ export const getAutomationAnalyticsForUser = async (
       {
         channel: AUTOMATION_CHANNEL.FACEBOOK_MESSENGER,
         deliveries: channelDeliveries.FACEBOOK_MESSENGER,
+      },
+      {
+        channel: AUTOMATION_CHANNEL.WHATSAPP,
+        deliveries: channelDeliveries.WHATSAPP,
       },
     ],
     topAutomations,

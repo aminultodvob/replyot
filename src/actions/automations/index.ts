@@ -270,7 +270,9 @@ export const activateAutomation = async (id: string, state: boolean) => {
           Boolean(integration.token) &&
           (automation.channel === "INSTAGRAM"
             ? true
-            : Boolean(integration.facebookPageId))
+            : automation.channel === "FACEBOOK_MESSENGER"
+              ? Boolean(integration.facebookPageId)
+              : Boolean(integration.whatsappPhoneNumberId))
       );
       const hasCommentTrigger = automation.trigger.some(
         (trigger) => trigger.type === "COMMENT"
@@ -293,7 +295,9 @@ export const activateAutomation = async (id: string, state: boolean) => {
           data:
             automation.channel === "FACEBOOK_MESSENGER"
               ? "Connect a Facebook Page in Integrations before activating this automation"
-              : "Connect Instagram in Integrations before activating this automation",
+              : automation.channel === "WHATSAPP"
+                ? "Connect WhatsApp Business in Integrations before activating this automation"
+                : "Connect Instagram in Integrations before activating this automation",
         };
       }
 
@@ -389,6 +393,16 @@ export const saveTrigger = async (automationId: string, trigger: string[]) => {
       return {
         status: 400,
         data: "Facebook automations only support comment triggers",
+      };
+    }
+
+    if (
+      automation.channel === "WHATSAPP" &&
+      trigger.some((type) => type !== "DM")
+    ) {
+      return {
+        status: 400,
+        data: "WhatsApp automations only support DM triggers",
       };
     }
 
@@ -497,7 +511,7 @@ const getCachedProfilePosts = unstable_cache(
 );
 
 export const getProfilePosts = async (
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" = "INSTAGRAM"
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP" = "INSTAGRAM"
 ) => {
   const user = await onCurrentUser();
   try {
@@ -520,7 +534,18 @@ export const getProfilePosts = async (
           message:
             channel === "FACEBOOK_MESSENGER"
               ? "Connect Facebook Page in Integrations to load posts."
+              : channel === "WHATSAPP"
+                ? "WhatsApp automations do not use posts."
               : "Connect Instagram in Integrations to load posts.",
+        },
+      };
+    }
+
+    if (channel === "WHATSAPP") {
+      return {
+        status: 400,
+        data: {
+          message: "WhatsApp automations do not support post targeting.",
         },
       };
     }

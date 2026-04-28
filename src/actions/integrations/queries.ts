@@ -13,6 +13,10 @@ export const updateIntegration = async (
     instagramId?: string;
     facebookPageId?: string;
     pageName?: string;
+    whatsappBusinessAccountId?: string;
+    whatsappPhoneNumberId?: string;
+    whatsappBusinessPhone?: string;
+    whatsappDisplayName?: string;
   }
 ) => {
   const [integration] = await db
@@ -23,6 +27,10 @@ export const updateIntegration = async (
       instagramId: meta?.instagramId,
       facebookPageId: meta?.facebookPageId,
       pageName: meta?.pageName,
+      whatsappBusinessAccountId: meta?.whatsappBusinessAccountId,
+      whatsappPhoneNumberId: meta?.whatsappPhoneNumberId,
+      whatsappBusinessPhone: meta?.whatsappBusinessPhone,
+      whatsappDisplayName: meta?.whatsappDisplayName,
     })
     .where(eq(integrations.id, id))
     .returning();
@@ -77,6 +85,23 @@ export const findIntegrationByFacebookPageId = async (facebookPageId: string) =>
   });
 };
 
+export const findIntegrationByWhatsAppPhoneNumberId = async (
+  whatsappPhoneNumberId: string
+) => {
+  return await db.query.integrations.findFirst({
+    where: eq(integrations.whatsappPhoneNumberId, whatsappPhoneNumberId),
+    columns: {
+      id: true,
+      userId: true,
+      name: true,
+      whatsappBusinessAccountId: true,
+      whatsappPhoneNumberId: true,
+      whatsappBusinessPhone: true,
+      whatsappDisplayName: true,
+    },
+  });
+};
+
 export const createIntegration = async (
   userId: string,
   name: IntegrationName,
@@ -86,6 +111,10 @@ export const createIntegration = async (
     instagramId?: string;
     facebookPageId?: string;
     pageName?: string;
+    whatsappBusinessAccountId?: string;
+    whatsappPhoneNumberId?: string;
+    whatsappBusinessPhone?: string;
+    whatsappDisplayName?: string;
   }
 ) => {
   return await db.transaction(async (tx) => {
@@ -110,6 +139,10 @@ export const createIntegration = async (
       instagramId: meta?.instagramId,
       facebookPageId: meta?.facebookPageId,
       pageName: meta?.pageName,
+      whatsappBusinessAccountId: meta?.whatsappBusinessAccountId,
+      whatsappPhoneNumberId: meta?.whatsappPhoneNumberId,
+      whatsappBusinessPhone: meta?.whatsappBusinessPhone,
+      whatsappDisplayName: meta?.whatsappDisplayName,
     });
 
     return {

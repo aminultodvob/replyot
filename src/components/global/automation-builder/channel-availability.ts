@@ -9,7 +9,7 @@ export type ChannelStatus = "Connected" | "Needs connection";
 export type TriggerStatus = "Connected" | "Needs connection" | "Unavailable";
 
 export type ChannelAvailabilityItem = {
-  value: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  value: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   ready: boolean;
   selectable: boolean;
   status: ChannelStatus;
@@ -26,12 +26,16 @@ export type TriggerAvailability = {
 export type BuilderChannelAvailability = {
   instagramReady: boolean;
   facebookReady: boolean;
+  whatsappReady: boolean;
   hasAnyReadyChannel: boolean;
   selectedChannelReady: boolean;
   selectedChannelLockReason?: LockReason;
   selectedIntegrationDetail: string;
-  availableChannels: Array<"INSTAGRAM" | "FACEBOOK_MESSENGER">;
-  channels: Record<"INSTAGRAM" | "FACEBOOK_MESSENGER", ChannelAvailabilityItem>;
+  availableChannels: Array<"INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP">;
+  channels: Record<
+    "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP",
+    ChannelAvailabilityItem
+  >;
   triggers: Record<"COMMENT" | "DM", TriggerAvailability>;
 };
 
@@ -62,12 +66,25 @@ const getFacebookConnection = (automation: AutomationDetail) => {
   );
 };
 
+const getWhatsAppConnection = (automation: AutomationDetail) => {
+  const integration = (automation.User?.integrations ?? []).find(
+    (item) => item.name === "WHATSAPP"
+  );
+
+  return (
+    Boolean(integration?.token) &&
+    Boolean(integration?.whatsappPhoneNumberId) &&
+    isFutureDate(integration?.expiresAt)
+  );
+};
+
 export const getBuilderChannelAvailability = (
   automation: AutomationDetail
 ): BuilderChannelAvailability => {
   const instagramReady = getInstagramConnection(automation);
   const facebookReady = getFacebookConnection(automation);
-  const hasAnyReadyChannel = instagramReady || facebookReady;
+  const whatsappReady = getWhatsAppConnection(automation);
+  const hasAnyReadyChannel = instagramReady || facebookReady || whatsappReady;
 
   const channels: BuilderChannelAvailability["channels"] = {
     INSTAGRAM: {
@@ -92,7 +109,20 @@ export const getBuilderChannelAvailability = (
         : {
             title: "Facebook Page not connected",
             message:
-              "Connect Facebook and select a Page in Integrations to use Facebook triggers.",
+          "Connect Facebook and select a Page in Integrations to use Facebook triggers.",
+          },
+    },
+    WHATSAPP: {
+      value: "WHATSAPP",
+      ready: whatsappReady,
+      selectable: whatsappReady,
+      status: whatsappReady ? "Connected" : "Needs connection",
+      lockReason: whatsappReady
+        ? undefined
+        : {
+            title: "WhatsApp Business not connected",
+            message:
+              "Connect WhatsApp Business in Integrations to use WhatsApp message triggers.",
           },
     },
   };
@@ -103,16 +133,28 @@ export const getBuilderChannelAvailability = (
   const triggers: BuilderChannelAvailability["triggers"] = {
     COMMENT: {
       type: "COMMENT",
-      available: selectedChannelReady,
-      status: selectedChannelReady ? "Connected" : "Needs connection",
-      reason: selectedChannelReady
-        ? undefined
-        : selectedChannelLockReason?.message ??
-          "Connect this channel in Integrations first.",
+      available:
+        selectedChannelReady &&
+        automation.channel !== "WHATSAPP",
+      status:
+        automation.channel === "WHATSAPP"
+          ? "Unavailable"
+          : selectedChannelReady
+            ? "Connected"
+            : "Needs connection",
+      reason:
+        automation.channel === "WHATSAPP"
+          ? "WhatsApp supports DM trigger only."
+          : selectedChannelReady
+            ? undefined
+            : selectedChannelLockReason?.message ??
+              "Connect this channel in Integrations first.",
     },
     DM: {
       type: "DM",
-      available: selectedChannelReady && automation.channel === "INSTAGRAM",
+      available:
+        selectedChannelReady &&
+        (automation.channel === "INSTAGRAM" || automation.channel === "WHATSAPP"),
       status:
         automation.channel === "FACEBOOK_MESSENGER"
           ? "Unavailable"
@@ -124,8 +166,10 @@ export const getBuilderChannelAvailability = (
           ? "Facebook supports comment trigger only."
           : selectedChannelReady
             ? undefined
-            : selectedChannelLockReason?.message ??
-              "Connect Instagram in Integrations first.",
+            : (selectedChannelLockReason?.message ??
+              (automation.channel === "WHATSAPP"
+                ? "Connect WhatsApp Business in Integrations first."
+                : "Connect Instagram in Integrations first.")),
     },
   };
 
@@ -136,10 +180,12 @@ export const getBuilderChannelAvailability = (
   const availableChannels: BuilderChannelAvailability["availableChannels"] = [];
   if (instagramReady) availableChannels.push("INSTAGRAM");
   if (facebookReady) availableChannels.push("FACEBOOK_MESSENGER");
+  if (whatsappReady) availableChannels.push("WHATSAPP");
 
   return {
     instagramReady,
     facebookReady,
+    whatsappReady,
     hasAnyReadyChannel,
     selectedChannelReady,
     selectedChannelLockReason,

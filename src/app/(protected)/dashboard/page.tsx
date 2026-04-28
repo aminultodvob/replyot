@@ -203,7 +203,11 @@ const Page = async () => {
                     {automation.name}
                   </p>
                   <p className="mt-1 text-sm font-medium text-zinc-500">
-                    {automation.channel === "FACEBOOK_MESSENGER" ? "Facebook Messenger" : "Instagram"}
+                    {automation.channel === "FACEBOOK_MESSENGER"
+                      ? "Facebook Messenger"
+                      : automation.channel === "WHATSAPP"
+                        ? "WhatsApp"
+                        : "Instagram"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

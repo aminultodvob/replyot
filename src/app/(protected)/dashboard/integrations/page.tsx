@@ -40,6 +40,8 @@ async function page({ searchParams }: Props) {
   const readyIntegrations = integrations.filter((integration) =>
     integration.name === "FACEBOOK_MESSENGER"
       ? Boolean(integration.token && integration.facebookPageId)
+      : integration.name === "WHATSAPP"
+        ? Boolean(integration.token && integration.whatsappPhoneNumberId)
       : Boolean(integration.token)
   );
   const connectedCount = readyIntegrations.length;
@@ -57,7 +59,7 @@ async function page({ searchParams }: Props) {
           Integrations
         </h1>
         <p className="mt-2 max-w-2xl text-sm font-medium text-zinc-600 sm:text-base">
-          Connect Instagram and Facebook once, then use them across all automations.
+          Connect Instagram, Facebook, and WhatsApp once, then use them across all automations.
         </p>
         {readOnly ? (
           <p className="mt-6 rounded-[20px] border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-medium text-amber-900 shadow-sm">
@@ -84,6 +86,8 @@ async function page({ searchParams }: Props) {
           const isReady =
             card.strategy === "FACEBOOK_MESSENGER"
               ? Boolean(matchedIntegration?.token && matchedIntegration?.facebookPageId)
+              : card.strategy === "WHATSAPP"
+                ? Boolean(matchedIntegration?.token && matchedIntegration?.whatsappPhoneNumberId)
               : Boolean(matchedIntegration?.token);
 
           const connectedLabel =
@@ -94,6 +98,12 @@ async function page({ searchParams }: Props) {
                   ? `Page ID: ${matchedIntegration.facebookPageId}`
                   : matchedIntegration
                     ? "Page not selected yet"
+                    : undefined
+              : card.strategy === "WHATSAPP"
+                ? matchedIntegration?.whatsappBusinessPhone
+                  ? `${matchedIntegration.whatsappDisplayName ?? "WhatsApp"} · ${matchedIntegration.whatsappBusinessPhone}`
+                  : matchedIntegration?.whatsappPhoneNumberId
+                    ? `Phone ID: ${matchedIntegration.whatsappPhoneNumberId}`
                     : undefined
               : undefined;
           const blockedReason =

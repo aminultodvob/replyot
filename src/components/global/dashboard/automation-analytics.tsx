@@ -174,6 +174,8 @@ const AutomationAnalytics = ({ initialData }: Props) => {
                   <p className="text-sm font-medium text-slate-700">
                     {item.channel === "FACEBOOK_MESSENGER"
                       ? "Facebook"
+                      : item.channel === "WHATSAPP"
+                        ? "WhatsApp"
                       : "Instagram"}
                   </p>
                   <p className="text-sm font-semibold text-slate-950">
@@ -213,4 +215,3 @@ const AutomationAnalytics = ({ initialData }: Props) => {
 };
 
 export default AutomationAnalytics;
-

@@ -19,12 +19,14 @@ export type BillingUsageSnapshot = {
   facebookCommentReplies: number;
   instagramDmReplies: number;
   instagramCommentReplies: number;
+  whatsappMessagesSent: number;
 } | null | undefined;
 
 export type BillingMetric =
   | "facebookCommentReplies"
   | "instagramDmReplies"
-  | "instagramCommentReplies";
+  | "instagramCommentReplies"
+  | "whatsappMessagesSent";
 
 type SubscriptionStatus = SubscriptionSnapshot extends
   | null
@@ -96,17 +98,22 @@ export const INSTAGRAM_COMMENT_LIMIT = Number(
 export const BILLING_WARNING_THRESHOLD = Number(
   process.env.NEXT_PUBLIC_BILLING_WARNING_THRESHOLD ?? "0.8"
 );
+export const WHATSAPP_MESSAGE_LIMIT = Number(
+  process.env.NEXT_PUBLIC_BILLING_WHATSAPP_MESSAGE_LIMIT ?? "3000"
+);
 
 export const BILLING_LIMITS: Record<BillingMetric, number> = {
   facebookCommentReplies: FACEBOOK_COMMENT_LIMIT,
   instagramDmReplies: INSTAGRAM_DM_LIMIT,
   instagramCommentReplies: INSTAGRAM_COMMENT_LIMIT,
+  whatsappMessagesSent: WHATSAPP_MESSAGE_LIMIT,
 };
 
 export const BILLING_LIMIT_LABELS: Record<BillingMetric, string> = {
   facebookCommentReplies: "Facebook comment replies",
   instagramDmReplies: "Instagram messages",
   instagramCommentReplies: "Instagram comment replies",
+  whatsappMessagesSent: "WhatsApp messages",
 };
 
 export const formatBillingPrice = () =>
@@ -250,7 +257,8 @@ export const getPlanCapabilities = (plan: "FREE" | "PRO"): PlanCapabilities => {
 export const getFreeUsageTotal = (usage: BillingUsageSnapshot) =>
   (usage?.facebookCommentReplies ?? 0) +
   (usage?.instagramDmReplies ?? 0) +
-  (usage?.instagramCommentReplies ?? 0);
+  (usage?.instagramCommentReplies ?? 0) +
+  (usage?.whatsappMessagesSent ?? 0);
 
 export const getUsagePercentage = (
   metric: BillingMetric,

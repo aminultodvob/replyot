@@ -88,7 +88,11 @@ export const buildAutomationReadiness = (
     (!needsPosts || hasPosts);
 
   const channelLabel =
-    automation.channel === "FACEBOOK_MESSENGER" ? "Facebook Page" : "Instagram";
+    automation.channel === "FACEBOOK_MESSENGER"
+      ? "Facebook Page"
+      : automation.channel === "WHATSAPP"
+        ? "WhatsApp Business"
+        : "Instagram";
   const triggerLabels = automation.trigger.map((trigger) =>
     trigger.type === "COMMENT" ? "Comment" : "DM"
   );
@@ -131,7 +135,9 @@ export const buildAutomationReadiness = (
     ? responsePreview
     : automation.channel === "FACEBOOK_MESSENGER"
       ? "Add public reply"
-      : "Add DM reply";
+      : automation.channel === "WHATSAPP"
+        ? "Add WhatsApp reply"
+        : "Add DM reply";
 
   const checklist: ReadinessChecklistItem[] = [
     {
@@ -161,10 +167,12 @@ export const buildAutomationReadiness = (
     {
       id: "response",
       stepId: "response",
-      label:
+        label:
         automation.channel === "FACEBOOK_MESSENGER"
           ? "Reply saved"
-          : "Response saved",
+          : automation.channel === "WHATSAPP"
+            ? "WhatsApp reply saved"
+            : "Response saved",
       complete: hasListener,
     },
   ];
@@ -194,11 +202,18 @@ export const buildAutomationReadiness = (
     },
     {
       id: "response",
-      title: automation.channel === "FACEBOOK_MESSENGER" ? "Public reply" : "Response",
+      title:
+        automation.channel === "FACEBOOK_MESSENGER"
+          ? "Public reply"
+          : automation.channel === "WHATSAPP"
+            ? "WhatsApp reply"
+            : "Response",
       description:
         automation.channel === "FACEBOOK_MESSENGER"
           ? "What gets posted publicly."
-          : "What gets sent after the trigger.",
+          : automation.channel === "WHATSAPP"
+            ? "What gets sent back on WhatsApp."
+            : "What gets sent after the trigger.",
       summary: responseSummary,
       complete: hasListener,
     },

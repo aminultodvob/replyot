@@ -27,6 +27,8 @@ const Trigger = ({ id, automation }: Props) => {
   const effectiveTriggers =
     channel === "FACEBOOK_MESSENGER"
       ? AUTOMATION_TRIGGERS.filter((trigger) => trigger.type === "COMMENT")
+      : channel === "WHATSAPP"
+        ? AUTOMATION_TRIGGERS.filter((trigger) => trigger.type === "DM")
       : AUTOMATION_TRIGGERS;
 
   return (
@@ -98,4 +100,3 @@ const Trigger = ({ id, automation }: Props) => {
 };
 
 export default Trigger;
-

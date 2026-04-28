@@ -9,6 +9,7 @@ import { z } from "zod";
 import {
   createPasswordResetToken,
   createUser,
+  findAuthUserByEmail,
   findPasswordResetToken,
   findUser,
   findUserByEmail,
@@ -140,7 +141,7 @@ export const authOptions: NextAuthOptions = {
             throw new Error("AUTH_RATE_LIMITED");
           }
 
-          const user = await findUserByEmail(email);
+          const user = await findAuthUserByEmail(email);
 
           if (!user?.passwordHash) {
             return null;
@@ -264,7 +265,7 @@ export const signUpWithPassword = async (input: {
   }
 
   const email = normalizeEmail(parsed.data.email);
-  const existingUser = await findUserByEmail(email);
+  const existingUser = await findAuthUserByEmail(email);
 
   if (existingUser) {
     return {
@@ -311,7 +312,7 @@ export const requestPasswordReset = async (input: { email: string }) => {
     };
   }
 
-  const user = await findUserByEmail(email);
+  const user = await findAuthUserByEmail(email);
 
   if (!user) {
     return {

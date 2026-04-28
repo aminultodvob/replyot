@@ -38,6 +38,8 @@ const ThenNode = ({ id, automation }: Props) => {
           <p className="text-lg font-semibold tracking-tight text-slate-950">
             {automation.channel === "FACEBOOK_MESSENGER"
               ? "Send a public reply after a Facebook comment match."
+              : automation.channel === "WHATSAPP"
+                ? "Send a WhatsApp reply after a keyword match."
               : "Send the user a message."}
           </p>
         </div>
@@ -46,6 +48,8 @@ const ThenNode = ({ id, automation }: Props) => {
             ? `Public reply: ${
                 automation.listener.commentReply ?? automation.listener.prompt ?? "Not set"
               }`
+            : automation.channel === "WHATSAPP"
+              ? `WhatsApp reply: ${automation.listener.prompt ?? "Not set"}`
             : automation.listener.prompt}
         </p>
       </div>

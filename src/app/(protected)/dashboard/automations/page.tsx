@@ -37,6 +37,12 @@ const Page = async () => {
         Boolean(integration.token) &&
         Boolean(integration.facebookPageId)
     ),
+    WHATSAPP: integrations.some(
+      (integration) =>
+        integration.name === "WHATSAPP" &&
+        Boolean(integration.token) &&
+        Boolean(integration.whatsappPhoneNumberId)
+    ),
   };
 
   const automationItems = automations.status === 200 ? automations.data : [];
@@ -134,6 +140,7 @@ const Page = async () => {
             >
               <DashboardLink href="/dashboard/integrations">
                 {availableIntegrations.INSTAGRAM || availableIntegrations.FACEBOOK_MESSENGER
+                  || availableIntegrations.WHATSAPP
                   ? "Templates below"
                   : "Connect a channel first"}
               </DashboardLink>
@@ -173,6 +180,15 @@ const Page = async () => {
             }`}
           >
             Facebook {availableIntegrations.FACEBOOK_MESSENGER ? "Connected" : "Missing"}
+          </span>
+          <span
+            className={`inline-flex rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-wider ${
+              availableIntegrations.WHATSAPP
+                ? "bg-emerald-100/50 text-emerald-700"
+                : "bg-zinc-100/80 text-zinc-500"
+            }`}
+          >
+            WhatsApp {availableIntegrations.WHATSAPP ? "Connected" : "Missing"}
           </span>
         </div>
         <div className="mt-8">

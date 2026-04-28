@@ -11,7 +11,7 @@ import { useMutationDataState } from "@/hooks/use-mutation-data";
 
 type Props = {
   id: string;
-  channel?: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  channel?: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   label?: string;
   initialValues?: {
     listener?: "MESSAGE" | string;
@@ -29,6 +29,7 @@ const ThenAction = ({
   submitLabel = "Add listener",
 }: Props) => {
   const isFacebook = channel === "FACEBOOK_MESSENGER";
+  const isWhatsApp = channel === "WHATSAPP";
   const {
     onSetListener,
     listener: Listener,
@@ -53,12 +54,16 @@ const ThenAction = ({
           <p className="font-medium">
             {isFacebook
               ? "Public comment reply"
-              : "Send the user a message"}
+              : isWhatsApp
+                ? "Send a WhatsApp reply"
+                : "Send the user a message"}
           </p>
           <p className="text-sm">
             {isFacebook
               ? "Post this reply publicly when a matched Facebook comment is received."
-              : "Enter the message that you want to send the user."}
+              : isWhatsApp
+                ? "Enter the WhatsApp message that you want to send the user."
+                : "Enter the message that you want to send the user."}
           </p>
         </div>
         <form onSubmit={onFormSubmit} className="flex flex-col gap-y-2">
@@ -71,15 +76,21 @@ const ThenAction = ({
           ) : (
             <>
               <Textarea
-                placeholder="Add a message you want to send to your customers"
+                placeholder={
+                  isWhatsApp
+                    ? "Add a WhatsApp reply you want to send"
+                    : "Add a message you want to send to your customers"
+                }
                 {...register("prompt")}
                 className="min-h-28 rounded-xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 outline-none ring-0 focus:ring-0"
               />
-              <Input
-                {...register("reply")}
-                placeholder="Add a public reply for comments (Optional)"
-                className="rounded-xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 outline-none ring-0 focus:ring-0"
-              />
+              {!isWhatsApp ? (
+                <Input
+                  {...register("reply")}
+                  placeholder="Add a public reply for comments (Optional)"
+                  className="rounded-xl border-slate-200 bg-slate-50 text-slate-900 placeholder:text-slate-400 outline-none ring-0 focus:ring-0"
+                />
+              ) : null}
             </>
           )}
           <Button

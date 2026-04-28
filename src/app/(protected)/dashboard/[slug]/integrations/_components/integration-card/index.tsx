@@ -3,6 +3,7 @@ import { deleteIntegration, onOAuthInstagram } from "@/actions/integrations";
 import { Button } from "@/components/ui/button";
 import React from "react";
 import InlineStatus from "@/components/global/inline-status";
+import WhatsAppEmbeddedSignupButton from "@/components/global/integrations/whatsapp-embedded-signup-button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +25,7 @@ type Props = {
   title: string;
   description: string;
   icon: React.ReactNode;
-  strategy: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  strategy: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   integrated: boolean;
   connectedLabel?: string;
   integrationId?: string;
@@ -49,7 +50,11 @@ const IntegrationCard = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
   const [confirmText, setConfirmText] = React.useState("");
   const onInstaOAuth = () => onOAuthInstagram(strategy);
+  const isWhatsApp = strategy === "WHATSAPP";
   const handleConnect = async () => {
+    if (isWhatsApp) {
+      return;
+    }
     setIsRedirecting(true);
     try {
       await onInstaOAuth();
@@ -113,18 +118,26 @@ const IntegrationCard = ({
               Connected
             </span>
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center lg:w-auto">
-              <Button
-                onClick={handleConnect}
-                variant="outline"
-                disabled={isRedirecting || isDeleting || readOnly}
-                className="w-full rounded-xl border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
-              >
-                {isRedirecting
-                  ? "Opening..."
-                  : strategy === "FACEBOOK_MESSENGER"
-                    ? "Change Page"
-                    : "Reconnect"}
-              </Button>
+              {isWhatsApp ? (
+                <WhatsAppEmbeddedSignupButton
+                  disabled={isDeleting || readOnly}
+                  label="Reconnect"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                />
+              ) : (
+                <Button
+                  onClick={handleConnect}
+                  variant="outline"
+                  disabled={isRedirecting || isDeleting || readOnly}
+                  className="w-full rounded-xl border-slate-200 bg-white px-4 text-sm text-slate-700 shadow-sm hover:bg-slate-50 sm:w-auto"
+                >
+                  {isRedirecting
+                    ? "Opening..."
+                    : strategy === "FACEBOOK_MESSENGER"
+                      ? "Change Page"
+                      : "Reconnect"}
+                </Button>
+              )}
               <AlertDialog
                 open={deleteDialogOpen}
                 onOpenChange={(open) => {
@@ -182,17 +195,25 @@ const IntegrationCard = ({
             </div>
           </>
         ) : (
-          <Button
-            onClick={handleConnect}
-            disabled={isRedirecting || readOnly || Boolean(blockedReason)}
-            className="w-full rounded-xl bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765cc] sm:w-auto"
-          >
-            {isRedirecting
-              ? "Opening..."
-              : strategy === "FACEBOOK_MESSENGER"
-                ? "Choose Page"
-                : "Connect"}
-          </Button>
+          isWhatsApp ? (
+            <WhatsAppEmbeddedSignupButton
+              disabled={readOnly || Boolean(blockedReason)}
+              label="Connect"
+              className="w-full rounded-xl bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765cc] sm:w-auto"
+            />
+          ) : (
+            <Button
+              onClick={handleConnect}
+              disabled={isRedirecting || readOnly || Boolean(blockedReason)}
+              className="w-full rounded-xl bg-[#1a73e8] px-4 text-sm font-medium text-white hover:bg-[#1765cc] sm:w-auto"
+            >
+              {isRedirecting
+                ? "Opening..."
+                : strategy === "FACEBOOK_MESSENGER"
+                  ? "Choose Page"
+                  : "Connect"}
+            </Button>
+          )
         )}
         {blockedReason ? (
           <p className="max-w-xs text-left text-xs leading-5 text-amber-700 lg:text-right">
@@ -206,6 +227,8 @@ const IntegrationCard = ({
               ? "Deleting integration..."
               : strategy === "FACEBOOK_MESSENGER"
                 ? "Opening Facebook Page selection..."
+                : strategy === "WHATSAPP"
+                  ? "Opening WhatsApp Business setup..."
                 : "Opening Instagram login..."
           }
         />

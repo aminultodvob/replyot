@@ -54,8 +54,14 @@ const hasReadyIntegration = (profile: UserProfile | null) => {
       Boolean(integration.token) &&
       Boolean(integration.facebookPageId)
   );
+  const hasWhatsApp = profile.integrations.some(
+    (integration) =>
+      integration.name === "WHATSAPP" &&
+      Boolean(integration.token) &&
+      Boolean(integration.whatsappPhoneNumberId)
+  );
 
-  return hasInstagram || hasFacebook;
+  return hasInstagram || hasFacebook || hasWhatsApp;
 };
 
 export const getOnboardingStage = (
@@ -111,7 +117,7 @@ export const getNextBestAction = (
     return {
       label: "Continue Setup",
       href: "/dashboard/integrations",
-      description: "Connect Instagram or Facebook first.",
+      description: "Connect Instagram, Facebook, or WhatsApp first.",
     };
   }
 
@@ -268,6 +274,22 @@ export const getIntegrationFeedbackMessage = (code?: string | null) => {
       "The app could not reach the database in time. Please try again in a moment.",
     "facebook-connect-failed":
       "Facebook could not be connected right now. Please try again.",
+    "whatsapp-connected":
+      "WhatsApp Business connected successfully. You can now build message automations.",
+    "whatsapp-config-missing":
+      "WhatsApp Embedded Signup is missing required app configuration. Add the public app/config IDs and system token first.",
+    "whatsapp-number-already-connected":
+      "This WhatsApp phone number is already connected to another user. Disconnect it there first or use a different number.",
+    "whatsapp-phone-unavailable":
+      "WhatsApp connected, but the phone number details could not be verified. Please try again.",
+    "whatsapp-auth-invalid":
+      "WhatsApp authorization was rejected or expired. Please connect again.",
+    "whatsapp-permission-missing":
+      "Meta did not grant the required WhatsApp permissions. Accept all requested permissions and try again.",
+    "whatsapp-rate-limited":
+      "Meta temporarily rate-limited this WhatsApp connection attempt. Please try again shortly.",
+    "whatsapp-connect-failed":
+      "WhatsApp Business could not be connected right now. Please try again.",
   } as const;
 
   return code && code in messages
@@ -324,7 +346,7 @@ const getQuotaItems = (
   }));
 
 export const getFlowHealth = (input: {
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   hasConnectedIntegration: boolean;
   integrationDetail?: string;
   hasTrigger: boolean;
@@ -372,6 +394,8 @@ export const getFlowHealth = (input: {
           : input.integrationDetail ||
             (input.channel === "FACEBOOK_MESSENGER"
               ? "Connect Facebook Page"
+              : input.channel === "WHATSAPP"
+                ? "Connect WhatsApp Business"
               : "Connect Instagram"),
       },
       {

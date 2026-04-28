@@ -144,7 +144,7 @@ export const useEditAutomation = (automationId: string) => {
 
 export const useListener = (
   id: string,
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" = "INSTAGRAM",
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP" = "INSTAGRAM",
   initialValues?: {
     listener?: "MESSAGE" | string;
     prompt?: string;
@@ -363,11 +363,13 @@ export const useDeleteAutomation = (
 
 export const useTriggers = (
   id: string,
-  initialChannel: "INSTAGRAM" | "FACEBOOK_MESSENGER" = "INSTAGRAM",
+  initialChannel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP" = "INSTAGRAM",
   initialTypes: string[] = [],
   options?: {
     autoSave?: boolean;
-    canSetChannel?: (channel: "INSTAGRAM" | "FACEBOOK_MESSENGER") => boolean;
+    canSetChannel?: (
+      channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP"
+    ) => boolean;
     canSetTrigger?: (type: "COMMENT" | "DM") => boolean;
   }
 ) => {
@@ -380,7 +382,9 @@ export const useTriggers = (
     [initialTypesSignature]
   );
   const [types, setTypes] = useState<string[]>(initialTypes);
-  const [channel, setChannel] = useState<"INSTAGRAM" | "FACEBOOK_MESSENGER">(
+  const [channel, setChannel] = useState<
+    "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP"
+  >(
     initialChannel
   );
 
@@ -391,7 +395,7 @@ export const useTriggers = (
 
   const { mutate: mutateChannel, isPending: channelPending } = useMutationData(
     ["update-automation-channel"],
-    (data: { channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" }) =>
+    (data: { channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP" }) =>
       updateAutomationChannel(id, data.channel),
     {
       onMutate: (client, variables) => {
@@ -438,6 +442,8 @@ export const useTriggers = (
         setTypes((current) =>
           channel === "FACEBOOK_MESSENGER"
             ? current.filter((item) => item === "COMMENT")
+            : channel === "WHATSAPP"
+              ? current.filter((item) => item === "DM")
             : current
         );
       },
@@ -492,7 +498,9 @@ export const useTriggers = (
     [mutate]
   );
 
-  const onSetChannel = (nextChannel: "INSTAGRAM" | "FACEBOOK_MESSENGER") => {
+  const onSetChannel = (
+    nextChannel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP"
+  ) => {
     if (options?.canSetChannel && !options.canSetChannel(nextChannel)) {
       return;
     }
@@ -500,6 +508,8 @@ export const useTriggers = (
     const nextTypes =
       nextChannel === "FACEBOOK_MESSENGER"
         ? types.filter((item) => item === "COMMENT")
+        : nextChannel === "WHATSAPP"
+          ? types.filter((item) => item === "DM")
         : types;
 
     setChannel(nextChannel);

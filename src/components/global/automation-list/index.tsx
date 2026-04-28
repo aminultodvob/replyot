@@ -36,6 +36,7 @@ type Props = {
   availableIntegrations?: {
     INSTAGRAM: boolean;
     FACEBOOK_MESSENGER: boolean;
+    WHATSAPP: boolean;
   };
   readOnly?: boolean;
   canCreate?: boolean;
@@ -47,6 +48,7 @@ const AutomationList = ({
   availableIntegrations = {
     INSTAGRAM: true,
     FACEBOOK_MESSENGER: true,
+    WHATSAPP: true,
   },
   readOnly = false,
   canCreate = true,
@@ -111,8 +113,9 @@ const AutomationList = ({
           latestVariable?.status === "pending" &&
           latestVariable?.variables?.id === automation.id;
         const integrationReady =
-          availableIntegrations[automation.channel as "INSTAGRAM" | "FACEBOOK_MESSENGER"] ??
-          false;
+          availableIntegrations[
+            automation.channel as "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP"
+          ] ?? false;
         const automationStatus = !integrationReady
           ? "Integration missing"
           : automation.active
@@ -165,6 +168,8 @@ const AutomationList = ({
                 <span className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-600">
                   {automation.channel === "FACEBOOK_MESSENGER"
                     ? "Facebook Page"
+                    : automation.channel === "WHATSAPP"
+                      ? "WhatsApp Business"
                     : "Instagram"}
                 </span>
                 <span
@@ -187,6 +192,8 @@ const AutomationList = ({
               <p className="mb-2 mt-2 max-w-2xl text-sm leading-6 text-slate-600">
                 {automation.channel === "FACEBOOK_MESSENGER"
                   ? "Public Facebook comment reply automation for your connected Page."
+                  : automation.channel === "WHATSAPP"
+                    ? "WhatsApp Business automation for inbound message replies."
                   : "Instagram automation for comments or direct messages"}
               </p>
               {!integrationReady ? (
@@ -252,6 +259,8 @@ const AutomationList = ({
                   ? "Blocked"
                   : automation.channel === "FACEBOOK_MESSENGER"
                     ? "Comment Flow"
+                    : automation.channel === "WHATSAPP"
+                      ? "WhatsApp Flow"
                     : "Automation"}
               </Button>
             </div>

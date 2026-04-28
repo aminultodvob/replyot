@@ -18,6 +18,7 @@ type BillingUsage = {
   facebookCommentReplies: number;
   instagramDmReplies: number;
   instagramCommentReplies: number;
+  whatsappMessagesSent: number;
 } | null;
 
 type Props = {

@@ -56,6 +56,7 @@ export type StepCardProps = {
 export const KEYWORD_SUGGESTIONS = {
   INSTAGRAM: ["price", "details", "shop", "info", "link"],
   FACEBOOK_MESSENGER: ["info", "pricing", "details", "help", "book"],
+  WHATSAPP: ["price", "details", "support", "order", "help"],
 } as const;
 
 export const truncateText = (value: string, length = 110) => {
@@ -307,7 +308,7 @@ export const PostsPicker = ({
   label,
 }: {
   automationId: string;
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   initialPosts: {
     postid: string;
     caption?: string | null;
@@ -319,6 +320,7 @@ export const PostsPicker = ({
 }) => {
   const isMobile = useIsMobile();
   const isFacebook = channel === "FACEBOOK_MESSENGER";
+  const isWhatsApp = channel === "WHATSAPP";
   const [open, setOpen] = React.useState(false);
   const { data } = useQueryAutomationPosts(open, channel);
   const { posts, onSelectPost, mutate, isPending } = useAutomationPosts(
@@ -359,7 +361,17 @@ export const PostsPicker = ({
         </div>
       </div>
 
-      {!data ? (
+      {isWhatsApp ? (
+        <div className="flex flex-1 flex-col items-center justify-center rounded-[28px] border border-slate-200 bg-slate-50 px-6 py-12 text-center">
+          <PlugZap className="size-10 text-slate-300" />
+          <h4 className="mt-4 text-lg font-semibold text-slate-900">
+            WhatsApp does not use posts
+          </h4>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+            WhatsApp automations trigger from inbound messages only, so there are no posts to attach here.
+          </p>
+        </div>
+      ) : !data ? (
         <div className="grid min-h-0 grid-cols-1 gap-3 overflow-y-auto overscroll-contain pb-2 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, index) => (
             <Skeleton key={index} className="h-[220px] rounded-[24px] sm:h-[260px]" />
@@ -578,6 +590,8 @@ export const SetupStep = ({
   const effectiveTriggers =
     channel === "FACEBOOK_MESSENGER"
       ? AUTOMATION_TRIGGERS.filter((trigger) => trigger.type === "COMMENT")
+      : channel === "WHATSAPP"
+        ? AUTOMATION_TRIGGERS.filter((trigger) => trigger.type === "DM")
       : AUTOMATION_TRIGGERS;
 
   return (
@@ -599,6 +613,8 @@ export const SetupStep = ({
                 {selectedChannel.lockReason?.title ??
                   (channel === "FACEBOOK_MESSENGER"
                     ? "Connect your Facebook Page."
+                    : channel === "WHATSAPP"
+                      ? "Connect WhatsApp Business."
                     : "Connect Instagram.")}
               </p>
               <p className="mt-1 text-sm text-amber-900">
@@ -619,6 +635,12 @@ export const SetupStep = ({
         <div className="rounded-[24px] border border-blue-200 bg-blue-50 px-5 py-4">
           <p className="text-sm font-semibold text-blue-950">
             Facebook only supports comment triggers.
+          </p>
+        </div>
+      ) : channel === "WHATSAPP" ? (
+        <div className="rounded-[24px] border border-blue-200 bg-blue-50 px-5 py-4">
+          <p className="text-sm font-semibold text-blue-950">
+            WhatsApp only supports DM triggers.
           </p>
         </div>
       ) : null}
@@ -814,6 +836,8 @@ export const PostsStep = ({
           label={
             automation.channel === "FACEBOOK_MESSENGER"
               ? "Choose Facebook posts"
+              : automation.channel === "WHATSAPP"
+                ? "WhatsApp does not use posts"
               : "Choose Instagram posts"
           }
           initialPosts={automation.posts}
@@ -964,6 +988,7 @@ export const ResponseStep = ({
   automation: NonNullable<AutomationDetailResponse["data"]>;
 }) => {
   const isFacebook = automation.channel === "FACEBOOK_MESSENGER";
+  const isWhatsApp = automation.channel === "WHATSAPP";
   const { register, onFormSubmit, isPending } = useListener(automationId, automation.channel, {
     listener: automation.listener?.listener,
     prompt: automation.listener?.prompt,
@@ -973,7 +998,11 @@ export const ResponseStep = ({
   return (
     <div className="space-y-5">
       <p className="text-sm font-medium text-slate-500">
-        {isFacebook ? "Write the public reply." : "Write the message this flow sends."}
+        {isFacebook
+          ? "Write the public reply."
+          : isWhatsApp
+            ? "Write the WhatsApp message this flow sends."
+            : "Write the message this flow sends."}
       </p>
 
       <form onSubmit={onFormSubmit} className="space-y-5">
@@ -992,7 +1021,7 @@ export const ResponseStep = ({
           <>
             <div className="rounded-[28px] border border-slate-200 bg-white p-5">
               <label className="text-sm font-semibold text-slate-900">
-                Direct message
+                {isWhatsApp ? "WhatsApp reply" : "Direct message"}
               </label>
               <Textarea
                 {...register("prompt")}
@@ -1027,7 +1056,8 @@ export const ResponseStep = ({
                     automation.listener?.prompt ??
                     ""
                 ) || "No public reply saved yet."
-              : truncateText(automation.listener?.prompt ?? "") || "No DM saved yet."}
+              : truncateText(automation.listener?.prompt ?? "") ||
+                (isWhatsApp ? "No WhatsApp reply saved yet." : "No DM saved yet.")}
           </p>
         </div>
 

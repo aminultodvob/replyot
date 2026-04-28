@@ -38,10 +38,12 @@ export const subscriptionStatusEnum = pgEnum("SUBSCRIPTION_STATUS", [
 export const integrationEnum = pgEnum("INTEGRATIONS", [
   "INSTAGRAM",
   "FACEBOOK_MESSENGER",
+  "WHATSAPP",
 ]);
 export const automationChannelEnum = pgEnum("AUTOMATION_CHANNEL", [
   "INSTAGRAM",
   "FACEBOOK_MESSENGER",
+  "WHATSAPP",
 ]);
 export const mediaTypeEnum = pgEnum("MEDIATYPE", [
   "IMAGE",
@@ -91,7 +93,8 @@ export type AutomationEventStatus = keyof typeof AUTOMATION_EVENT_STATUS;
 export type BillingMetric =
   | "facebookCommentReplies"
   | "instagramDmReplies"
-  | "instagramCommentReplies";
+  | "instagramCommentReplies"
+  | "whatsappMessagesSent";
 
 export const users = pgTable(
   "User",
@@ -169,6 +172,10 @@ export const integrations = pgTable(
     instagramId: text("instagramId"),
     facebookPageId: text("facebookPageId"),
     pageName: text("pageName"),
+    whatsappBusinessAccountId: text("whatsappBusinessAccountId"),
+    whatsappPhoneNumberId: text("whatsappPhoneNumberId"),
+    whatsappBusinessPhone: text("whatsappBusinessPhone"),
+    whatsappDisplayName: text("whatsappDisplayName"),
   },
   (table) => ({
     tokenKey: uniqueIndex("Integrations_token_key").on(table.token),
@@ -177,6 +184,9 @@ export const integrations = pgTable(
     ),
     facebookPageIdKey: uniqueIndex("Integrations_facebookPageId_key").on(
       table.facebookPageId
+    ),
+    whatsappPhoneNumberIdKey: uniqueIndex("Integrations_whatsappPhoneNumberId_key").on(
+      table.whatsappPhoneNumberId
     ),
   })
 );
@@ -205,6 +215,7 @@ export const billingUsage = pgTable(
     instagramCommentReplies: integer("instagramCommentReplies")
       .notNull()
       .default(0),
+    whatsappMessagesSent: integer("whatsappMessagesSent").notNull().default(0),
     createdAt: timestamp("createdAt", { mode: "date", precision: 3 })
       .notNull()
       .defaultNow(),

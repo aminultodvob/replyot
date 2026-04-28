@@ -3,7 +3,7 @@ import React from "react";
 
 type Props = {
   type: string;
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER";
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP";
   keywords: {
     id: string;
     word: string;
@@ -13,6 +13,7 @@ type Props = {
 
 function ActiveTrigger({ keywords, type, channel }: Props) {
   const isFacebook = channel === "FACEBOOK_MESSENGER";
+  const isWhatsApp = channel === "WHATSAPP";
   const isLegacyFacebookDm = isFacebook && type !== "COMMENT";
 
   const title = isLegacyFacebookDm
@@ -21,7 +22,9 @@ function ActiveTrigger({ keywords, type, channel }: Props) {
       ? isFacebook
         ? "Comments on selected Facebook posts"
         : "Comments on selected Instagram posts"
-      : "Direct messages";
+      : isWhatsApp
+        ? "Incoming WhatsApp messages"
+        : "Direct messages";
 
   const description = isLegacyFacebookDm
     ? "This workflow was created before Facebook became comment-only. Update the trigger to Comment if you want this automation to run again."
@@ -29,7 +32,9 @@ function ActiveTrigger({ keywords, type, channel }: Props) {
       ? isFacebook
         ? "This automation runs when a matching keyword appears on one of the Facebook posts attached to this workflow."
         : "This automation runs when a matching keyword appears on one of the Instagram posts attached to this workflow."
-      : "This automation runs when a direct message matches one of your saved keywords.";
+      : isWhatsApp
+        ? "This automation runs when an incoming WhatsApp message matches one of your saved keywords."
+        : "This automation runs when a direct message matches one of your saved keywords.";
 
   return (
     <div className="app-panel-muted w-full rounded-[24px] p-5">

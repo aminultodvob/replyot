@@ -72,6 +72,10 @@ export const findUser = async (userId: string) => {
           instagramId: true,
           facebookPageId: true,
           pageName: true,
+          whatsappBusinessAccountId: true,
+          whatsappPhoneNumberId: true,
+          whatsappBusinessPhone: true,
+          whatsappDisplayName: true,
         },
       },
     },
@@ -90,6 +94,19 @@ export const findUserByEmail = async (email: string) => {
       passwordResetTokens: {
         orderBy: (table, { desc }) => [desc(table.createdAt)],
       },
+    },
+  });
+};
+
+export const findAuthUserByEmail = async (email: string) => {
+  return await db.query.users.findFirst({
+    where: eq(users.email, email),
+    columns: {
+      id: true,
+      email: true,
+      passwordHash: true,
+      firstname: true,
+      lastname: true,
     },
   });
 };

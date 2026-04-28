@@ -7,6 +7,7 @@ import {
   deleteIntegrationById,
   findIntegrationByFacebookPageId,
   findIntegrationByInstagramId,
+  findIntegrationByWhatsAppPhoneNumberId,
   getIntegration,
   updateIntegration,
 } from "./queries";
@@ -17,7 +18,10 @@ import {
   generateFacebookUserToken,
   generateTokens,
   getFacebookPages,
+  getWhatsAppPhoneNumberDetails,
+  getWhatsAppSystemUserToken,
   INSTAGRAM_GRAPH_API_VERSION,
+  subscribeAppToWhatsAppBusinessAccount,
 } from "@/lib/fetch";
 import axios from "axios";
 import { revalidateUserProfile } from "@/lib/cache-tags";
@@ -165,12 +169,14 @@ const getConnectedChannelCount = (
   profile.integrations.filter((integration) =>
     integration.name === "FACEBOOK_MESSENGER"
       ? Boolean(integration.token && integration.facebookPageId)
+      : integration.name === "WHATSAPP"
+        ? Boolean(integration.token && integration.whatsappPhoneNumberId)
       : Boolean(integration.token)
   ).length;
 
 const canConnectChannel = (
   profile: NonNullable<Awaited<ReturnType<typeof findUser>>>,
-  strategy: "INSTAGRAM" | "FACEBOOK_MESSENGER"
+  strategy: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP"
 ) => {
   const capabilities = getPlanCapabilities(profile.subscription?.plan ?? "FREE");
 
@@ -181,6 +187,8 @@ const canConnectChannel = (
   const existingReady = profile.integrations.filter((integration) =>
     integration.name === "FACEBOOK_MESSENGER"
       ? Boolean(integration.token && integration.facebookPageId)
+      : integration.name === "WHATSAPP"
+        ? Boolean(integration.token && integration.whatsappPhoneNumberId)
       : Boolean(integration.token)
   );
 
@@ -204,10 +212,14 @@ const canConnectChannel = (
 };
 
 export const onOAuthInstagram = (
-  strategy: "INSTAGRAM" | "FACEBOOK_MESSENGER"
+  strategy: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP"
 ) => {
   if (strategy === "INSTAGRAM") {
     return redirect(buildInstagramAuthorizeUrl());
+  }
+
+  if (strategy === "WHATSAPP") {
+    return redirect("/dashboard/integrations");
   }
 
   return redirect(buildFacebookAuthorizeUrl());
@@ -221,6 +233,10 @@ const getInstagramProfileRedirect = async (userId: string) => {
 };
 
 const getFacebookProfileRedirect = async (userId: string) => {
+  return "/dashboard/integrations";
+};
+
+const getWhatsAppProfileRedirect = async (userId: string) => {
   return "/dashboard/integrations";
 };
 
@@ -279,6 +295,41 @@ const getFacebookErrorCode = (error: unknown) => {
   }
 
   return "facebook-connect-failed" as const;
+};
+
+const getWhatsAppErrorCode = (error: unknown) => {
+  if (isUniqueConstraintError(error, "Integrations_whatsappPhoneNumberId_key")) {
+    return "whatsapp-number-already-connected" as const;
+  }
+
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status;
+
+    if (status === 401 || status === 400) {
+      return "whatsapp-auth-invalid" as const;
+    }
+
+    if (status === 403) {
+      return "whatsapp-permission-missing" as const;
+    }
+
+    if (status === 429) {
+      return "whatsapp-rate-limited" as const;
+    }
+  }
+
+  return "whatsapp-connect-failed" as const;
+};
+
+const resolveWhatsAppIntegrationToken = () => {
+  const token = getWhatsAppSystemUserToken().trim();
+  return token.length > 0 ? token : null;
+};
+
+const getLongLivedWhatsAppExpiry = () => {
+  const expiresAt = new Date();
+  expiresAt.setFullYear(expiresAt.getFullYear() + 5);
+  return expiresAt;
 };
 
 export const onIntegrate = async (code: string) => {
@@ -767,6 +818,136 @@ export const connectSelectedFacebookPage = async (formData: FormData) => {
         errorCode
       )
     );
+  }
+};
+
+export const completeWhatsAppEmbeddedSignup = async (input: {
+  wabaId: string;
+  phoneNumberId: string;
+}) => {
+  const user = await onCurrentUser();
+  const profileRedirect = await getWhatsAppProfileRedirect(user.id);
+
+  try {
+    const access = await getPackageMutationContext(user.id);
+    if (!access.ok) {
+      return { status: access.status, data: access.data };
+    }
+
+    const channelAccess = canConnectChannel(access.profile, "WHATSAPP");
+    if (!channelAccess.ok) {
+      return {
+        status: 403 as const,
+        data: {
+          redirectTo: withIntegrationStatus(
+            profileRedirect,
+            "integration_error",
+            "free-channel-limit"
+          ),
+        },
+      };
+    }
+
+    const systemToken = resolveWhatsAppIntegrationToken();
+    if (!systemToken) {
+      return {
+        status: 500 as const,
+        data: {
+          redirectTo: withIntegrationStatus(
+            profileRedirect,
+            "integration_error",
+            "whatsapp-config-missing"
+          ),
+        },
+      };
+    }
+
+    const integration = await getIntegration(user.id, "WHATSAPP");
+    const phoneDetails = await getWhatsAppPhoneNumberDetails(
+      input.phoneNumberId,
+      systemToken
+    );
+
+    try {
+      await subscribeAppToWhatsAppBusinessAccount(input.wabaId, systemToken);
+    } catch (error) {
+      console.warn("[developer:whatsapp] subscribe_app_failed", getErrorSummary(error));
+    }
+
+    const whatsappPhoneNumberId = String(
+      phoneDetails.id ?? input.phoneNumberId ?? ""
+    );
+    if (!whatsappPhoneNumberId) {
+      return {
+        status: 400 as const,
+        data: {
+          redirectTo: withIntegrationStatus(
+            profileRedirect,
+            "integration_error",
+            "whatsapp-phone-unavailable"
+          ),
+        },
+      };
+    }
+
+    const existingByPhoneNumberId = await findIntegrationByWhatsAppPhoneNumberId(
+      whatsappPhoneNumberId
+    );
+
+    if (existingByPhoneNumberId && existingByPhoneNumberId.userId !== user.id) {
+      return {
+        status: 409 as const,
+        data: {
+          redirectTo: withIntegrationStatus(
+            profileRedirect,
+            "integration_error",
+            "whatsapp-number-already-connected"
+          ),
+        },
+      };
+    }
+
+    const expiresAt = getLongLivedWhatsAppExpiry();
+    const meta = {
+      whatsappBusinessAccountId: input.wabaId,
+      whatsappPhoneNumberId,
+      whatsappBusinessPhone:
+        phoneDetails.display_phone_number ?? input.phoneNumberId,
+      whatsappDisplayName:
+        phoneDetails.verified_name ?? phoneDetails.display_phone_number ?? "WhatsApp",
+    };
+
+    if (existingByPhoneNumberId && existingByPhoneNumberId.userId === user.id) {
+      await updateIntegration(systemToken, expiresAt, existingByPhoneNumberId.id, meta);
+    } else if (integration?.integrations.length) {
+      await updateIntegration(systemToken, expiresAt, integration.integrations[0].id, meta);
+    } else {
+      await createIntegration(user.id, "WHATSAPP", systemToken, expiresAt, meta);
+    }
+
+    revalidateUserProfile(user.id);
+    return {
+      status: 200 as const,
+      data: {
+        redirectTo: withIntegrationStatus(
+          profileRedirect,
+          "integration_notice",
+          "whatsapp-connected"
+        ),
+      },
+    };
+  } catch (error) {
+    const errorCode = getWhatsAppErrorCode(error);
+    return {
+      status: 500 as const,
+      data: {
+        redirectTo: withIntegrationStatus(
+          profileRedirect,
+          "integration_error",
+          errorCode
+        ),
+      },
+    };
   }
 };
 

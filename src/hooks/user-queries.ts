@@ -42,7 +42,7 @@ export const useQueryAutomation = (
 
 export const useQueryAutomationPosts = (
   enabled = false,
-  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" = "INSTAGRAM"
+  channel: "INSTAGRAM" | "FACEBOOK_MESSENGER" | "WHATSAPP" = "INSTAGRAM"
 ) => {
   const fetchPosts = async () => await getProfilePosts(channel);
   return useQuery({

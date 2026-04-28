@@ -64,6 +64,13 @@
       "when": 1774684857820,
       "tag": "0008_true_king_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1774684857821,
+      "tag": "0009_whatsapp_channel",
+      "breakpoints": true
     }
   ]
 }
