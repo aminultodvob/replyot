@@ -117,6 +117,7 @@ export default function WhatsAppEmbeddedSignupButton({
   onComplete,
 }: Props) {
   const [isPending, setIsPending] = React.useState(false);
+  const [statusLabel, setStatusLabel] = React.useState(label);
   const sdkConfig = getWhatsAppSdkConfig();
 
   const handleClick = async () => {
@@ -133,6 +134,7 @@ export default function WhatsAppEmbeddedSignupButton({
     }
 
     setIsPending(true);
+    setStatusLabel("Opening...");
 
     const handleMessage = async (event: MessageEvent) => {
       if (
@@ -158,6 +160,7 @@ export default function WhatsAppEmbeddedSignupButton({
 
       if (embeddedSignupEvent.type === "FINISH") {
         window.removeEventListener("message", handleMessage);
+        setStatusLabel("Saving...");
         const phoneNumberId = embeddedSignupEvent.data?.phone_number_id;
         const wabaId = embeddedSignupEvent.data?.waba_id;
 
@@ -166,6 +169,7 @@ export default function WhatsAppEmbeddedSignupButton({
             description: "Meta did not return the expected phone number details.",
           });
           setIsPending(false);
+          setStatusLabel(label);
           return;
         }
 
@@ -199,6 +203,7 @@ export default function WhatsAppEmbeddedSignupButton({
           description: "You can restart the Meta connection flow any time.",
         });
         setIsPending(false);
+        setStatusLabel(label);
         return;
       }
 
@@ -208,6 +213,7 @@ export default function WhatsAppEmbeddedSignupButton({
           description: "Meta returned an error while connecting the number.",
         });
         setIsPending(false);
+        setStatusLabel(label);
       }
     };
 
@@ -223,6 +229,7 @@ export default function WhatsAppEmbeddedSignupButton({
               description: "Meta login was closed before setup finished.",
             });
             setIsPending(false);
+            setStatusLabel(label);
           }
         },
         {
@@ -231,7 +238,8 @@ export default function WhatsAppEmbeddedSignupButton({
           override_default_response_type: true,
           extras: {
             feature: "whatsapp_embedded_signup",
-            sessionInfoVersion: 3,
+            sessionInfoVersion: "3",
+            version: "v4",
           },
         }
       );
@@ -240,6 +248,7 @@ export default function WhatsAppEmbeddedSignupButton({
         description: "The Meta SDK could not be loaded. Please try again.",
       });
       setIsPending(false);
+      setStatusLabel(label);
     }
   };
 
@@ -250,7 +259,7 @@ export default function WhatsAppEmbeddedSignupButton({
       disabled={disabled || isPending}
       className={className}
     >
-      {isPending ? "Opening..." : label}
+      {isPending ? statusLabel : label}
     </Button>
   );
 }
