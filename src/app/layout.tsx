@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { Toaster } from "sonner";
 import ReactQueryProvider from "@/providers/react-query-provider";
+import FacebookSdkScript from "@/components/global/integrations/facebook-sdk-script";
 
 export const metadata: Metadata = {
   title: "Replyot",
@@ -17,6 +18,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body suppressHydrationWarning className="font-sans">
+        <FacebookSdkScript />
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

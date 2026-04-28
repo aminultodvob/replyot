@@ -40,27 +40,35 @@ const getWhatsAppSdkConfig = () => ({
 });
 
 const loadFacebookSdk = async (appId: string) => {
-  if (window.FB) {
-    window.FB.init({
+  const initFacebookSdk = () => {
+    window.FB?.init({
       appId,
+      autoLogAppEvents: true,
       cookie: true,
-      xfbml: false,
+      xfbml: true,
       version: "v25.0",
     });
+  };
+
+  if (window.FB) {
+    initFacebookSdk();
     return;
   }
 
   await new Promise<void>((resolve, reject) => {
+    const previousFbAsyncInit = window.fbAsyncInit;
+    const timeout = window.setTimeout(() => {
+      reject(new Error("facebook_sdk_timeout"));
+    }, 15000);
+
     window.fbAsyncInit = () => {
       try {
-        window.FB?.init({
-          appId,
-          cookie: true,
-          xfbml: false,
-          version: "v25.0",
-        });
+        previousFbAsyncInit?.();
+        initFacebookSdk();
+        window.clearTimeout(timeout);
         resolve();
       } catch (error) {
+        window.clearTimeout(timeout);
         reject(error);
       }
     };
