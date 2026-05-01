@@ -19,6 +19,51 @@ import { ensurePackageRuntimeAccess } from "@/lib/billing-access";
 import { applyRateLimit, getRequestIp } from "@/lib/rate-limit";
 import { logSecurityEvent } from "@/lib/security-log";
 
+type WhatsAppWebhookMessage = {
+  id?: string;
+  from?: string;
+  text?: {
+    body?: string;
+  };
+};
+
+type WhatsAppWebhookValue = {
+  metadata?: {
+    phone_number_id?: string;
+  };
+  messages?: WhatsAppWebhookMessage[];
+  contacts?: Array<{
+    wa_id?: string;
+  }>;
+};
+
+const getWhatsAppWebhookValues = (payload: unknown) => {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const body = payload as {
+    object?: unknown;
+    entry?: Array<{
+      changes?: Array<{
+        value?: WhatsAppWebhookValue;
+      }>;
+    }>;
+  };
+
+  if (body.object !== "whatsapp_business_account" || !Array.isArray(body.entry)) {
+    return [];
+  }
+
+  return body.entry.flatMap((entry) =>
+    Array.isArray(entry.changes)
+      ? entry.changes
+          .map((change) => change.value)
+          .filter((value): value is WhatsAppWebhookValue => Boolean(value))
+      : []
+  );
+};
+
 export async function GET(req: NextRequest) {
   const mode = req.nextUrl.searchParams.get("hub.mode");
   const token = req.nextUrl.searchParams.get("hub.verify_token");
@@ -55,208 +100,228 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Event ignored" }, { status: 429 });
   }
 
-  const payload = await req.json();
+  let payload: unknown;
+  try {
+    payload = await req.json();
+  } catch {
+    return NextResponse.json({ message: "Invalid JSON" }, { status: 400 });
+  }
 
   try {
-    const entry = payload?.entry?.[0];
-    const change = entry?.changes?.[0];
-    const value = change?.value;
-    const message = value?.messages?.[0];
-    const contact = value?.contacts?.[0];
-    const messageId =
-      typeof message?.id === "string" && message.id ? message.id : null;
-    const phoneNumberId =
-      typeof value?.metadata?.phone_number_id === "string"
-        ? value.metadata.phone_number_id
-        : null;
-    const senderId =
-      typeof message?.from === "string"
-        ? message.from
-        : typeof contact?.wa_id === "string"
-          ? contact.wa_id
+    const values = getWhatsAppWebhookValues(payload);
+    if (!values.length) {
+      return NextResponse.json({ message: "Event ignored" }, { status: 200 });
+    }
+
+    let sentCount = 0;
+
+    for (const value of values) {
+      const phoneNumberId =
+        typeof value.metadata?.phone_number_id === "string"
+          ? value.metadata.phone_number_id
           : null;
-    const textBody =
-      typeof message?.text?.body === "string" ? message.text.body.trim() : "";
+      const messages = Array.isArray(value.messages) ? value.messages : [];
+      const contact = Array.isArray(value.contacts) ? value.contacts[0] : undefined;
 
-    logSecurityEvent("webhook", "whatsapp_event_received", {
-      phoneNumberId,
-      messageId,
-      senderId,
-      hasText: Boolean(textBody),
-    });
-
-    if (messageId) {
-      const processed = await findProcessedExternalEvent("WHATSAPP", messageId);
-      if (processed) {
-        return NextResponse.json({ message: "Already processed" }, { status: 200 });
+      if (!phoneNumberId || !messages.length) {
+        continue;
       }
-    }
 
-    if (payload?.object !== "whatsapp_business_account" || !phoneNumberId) {
-      return NextResponse.json({ message: "Event ignored" }, { status: 200 });
-    }
+      const phoneIntegration = await getWhatsAppPhoneIntegration(phoneNumberId);
 
-    const phoneIntegration = await getWhatsAppPhoneIntegration(phoneNumberId);
+      if (!phoneIntegration?.userId) {
+        logSecurityEvent("webhook", "whatsapp_unmapped_phone_number", {
+          phoneNumberId,
+        });
+        continue;
+      }
 
-    if (phoneIntegration?.userId) {
-      await logAutomationEvent({
-        userId: phoneIntegration.userId,
-        channel: "WHATSAPP",
-        triggerType: "DM",
-        eventType: AUTOMATION_EVENT_TYPE.DM_RECEIVED,
-        senderId,
-        status: AUTOMATION_EVENT_STATUS.INFO,
-      });
-    }
+      for (const message of messages) {
+        const messageId =
+          typeof message.id === "string" && message.id ? message.id : null;
+        const senderId =
+          typeof message.from === "string"
+            ? message.from
+            : typeof contact?.wa_id === "string"
+              ? contact.wa_id
+              : null;
+        const textBody =
+          typeof message.text?.body === "string" ? message.text.body.trim() : "";
 
-    if (!textBody) {
-      if (phoneIntegration?.userId) {
+        logSecurityEvent("webhook", "whatsapp_event_received", {
+          phoneNumberId,
+          messageId,
+          senderId,
+          hasText: Boolean(textBody),
+        });
+
+        if (messageId) {
+          const processed = await findProcessedExternalEvent("WHATSAPP", messageId);
+          if (processed) {
+            continue;
+          }
+        }
+
         await logAutomationEvent({
           userId: phoneIntegration.userId,
           channel: "WHATSAPP",
           triggerType: "DM",
-          eventType: AUTOMATION_EVENT_TYPE.IGNORED,
+          eventType: AUTOMATION_EVENT_TYPE.DM_RECEIVED,
           senderId,
           status: AUTOMATION_EVENT_STATUS.INFO,
-          reason: "missing_text_body",
         });
-      }
-      return NextResponse.json({ message: "Event ignored" }, { status: 200 });
-    }
 
-    const matcher = await matchKeyword(textBody, "WHATSAPP", "DM");
+        if (!textBody) {
+          await logAutomationEvent({
+            userId: phoneIntegration.userId,
+            channel: "WHATSAPP",
+            triggerType: "DM",
+            eventType: AUTOMATION_EVENT_TYPE.IGNORED,
+            senderId,
+            status: AUTOMATION_EVENT_STATUS.INFO,
+            reason: "missing_text_body",
+          });
+          continue;
+        }
 
-    if (!matcher?.automationId) {
-      if (phoneIntegration?.userId) {
-        await logAutomationEvent({
-          userId: phoneIntegration.userId,
-          channel: "WHATSAPP",
-          triggerType: "DM",
-          eventType: AUTOMATION_EVENT_TYPE.IGNORED,
-          senderId,
-          status: AUTOMATION_EVENT_STATUS.INFO,
-          reason: "keyword_not_matched",
-        });
-      }
-      return NextResponse.json({ message: "No automation set" }, { status: 200 });
-    }
+        const matcher = await matchKeyword(
+          textBody,
+          "WHATSAPP",
+          "DM",
+          phoneIntegration.userId
+        );
 
-    const automation = await getKeywordAutomation(matcher.automationId, true, "WHATSAPP");
-    const automationUserId = automation?.User?.id ?? phoneIntegration?.userId ?? null;
+        if (!matcher?.automationId) {
+          await logAutomationEvent({
+            userId: phoneIntegration.userId,
+            channel: "WHATSAPP",
+            triggerType: "DM",
+            eventType: AUTOMATION_EVENT_TYPE.IGNORED,
+            senderId,
+            status: AUTOMATION_EVENT_STATUS.INFO,
+            reason: "keyword_not_matched",
+          });
+          continue;
+        }
 
-    if (automationUserId) {
-      await logAutomationEvent({
-        userId: automationUserId,
-        automationId: matcher.automationId,
-        channel: "WHATSAPP",
-        triggerType: "DM",
-        eventType: AUTOMATION_EVENT_TYPE.KEYWORD_MATCHED,
-        senderId,
-        status: AUTOMATION_EVENT_STATUS.SUCCESS,
-      });
-    }
+        const automation = await getKeywordAutomation(
+          matcher.automationId,
+          true,
+          "WHATSAPP"
+        );
+        const automationUserId = automation?.User?.id ?? phoneIntegration.userId;
 
-    const integration = automation?.User?.integrations?.[0];
-
-    if (
-      !automation?.listener ||
-      automation.listener.listener !== "MESSAGE" ||
-      !integration?.token ||
-      !integration.whatsappPhoneNumberId ||
-      !senderId
-    ) {
-      if (automationUserId) {
         await logAutomationEvent({
           userId: automationUserId,
           automationId: matcher.automationId,
           channel: "WHATSAPP",
           triggerType: "DM",
-          eventType: AUTOMATION_EVENT_TYPE.IGNORED,
-          senderId,
-          status: AUTOMATION_EVENT_STATUS.INFO,
-          reason: "missing_listener_or_whatsapp_connection",
-        });
-      }
-      return NextResponse.json({ message: "No automation set" }, { status: 200 });
-    }
-
-    const subscription = automation.User?.subscription;
-    const currentPeriod = getCurrentBillingPeriodBounds(subscription);
-    const currentUsage =
-      automationUserId && currentPeriod
-        ? await getCurrentBillingUsage(
-            automationUserId,
-            currentPeriod.periodStart,
-            currentPeriod.periodEnd
-          )
-        : null;
-    const deliveryAccess = ensurePackageRuntimeAccess(
-      subscription,
-      currentUsage,
-      "whatsappMessagesSent"
-    );
-
-    if (!deliveryAccess.ok) {
-      if (automationUserId) {
-        await logAutomationEvent({
-          userId: automationUserId,
-          automationId: automation.id,
-          channel: "WHATSAPP",
-          triggerType: "DM",
-          eventType: AUTOMATION_EVENT_TYPE.IGNORED,
-          senderId,
-          status: AUTOMATION_EVENT_STATUS.INFO,
-          reason: deliveryAccess.message,
-        });
-      }
-      return NextResponse.json({ message: "Delivery blocked" }, { status: 200 });
-    }
-
-    const prompt = automation.listener.prompt?.trim();
-    if (!prompt) {
-      return NextResponse.json({ message: "No automation set" }, { status: 200 });
-    }
-
-    const sendResult = await sendWhatsAppTextMessage(
-      integration.whatsappPhoneNumberId,
-      senderId,
-      prompt,
-      integration.token
-    );
-
-    if (sendResult.status === 200) {
-      await trackResponses(automation.id, "DM");
-
-      if (automationUserId) {
-        await logAutomationEvent({
-          userId: automationUserId,
-          automationId: automation.id,
-          channel: "WHATSAPP",
-          triggerType: "DM",
-          eventType: AUTOMATION_EVENT_TYPE.DM_REPLY_SENT,
+          eventType: AUTOMATION_EVENT_TYPE.KEYWORD_MATCHED,
           senderId,
           status: AUTOMATION_EVENT_STATUS.SUCCESS,
         });
 
-        if (currentPeriod) {
-          await incrementBillingUsage(
-            automationUserId,
-            subscription?.id ?? null,
-            currentPeriod.periodStart,
-            currentPeriod.periodEnd,
-            "whatsappMessagesSent"
-          );
+        const integration = automation?.User?.integrations?.find(
+          (item) => item.name === "WHATSAPP"
+        );
+
+        if (
+          !automation?.listener ||
+          automation.listener.listener !== "MESSAGE" ||
+          !integration?.token ||
+          !integration.whatsappPhoneNumberId ||
+          !senderId
+        ) {
+          await logAutomationEvent({
+            userId: automationUserId,
+            automationId: matcher.automationId,
+            channel: "WHATSAPP",
+            triggerType: "DM",
+            eventType: AUTOMATION_EVENT_TYPE.IGNORED,
+            senderId,
+            status: AUTOMATION_EVENT_STATUS.INFO,
+            reason: "missing_listener_or_whatsapp_connection",
+          });
+          continue;
+        }
+
+        const subscription = automation.User?.subscription;
+        const currentPeriod = getCurrentBillingPeriodBounds(subscription);
+        const currentUsage =
+          currentPeriod
+            ? await getCurrentBillingUsage(
+                automationUserId,
+                currentPeriod.periodStart,
+                currentPeriod.periodEnd
+              )
+            : null;
+        const deliveryAccess = ensurePackageRuntimeAccess(
+          subscription,
+          currentUsage,
+          "whatsappMessagesSent"
+        );
+
+        if (!deliveryAccess.ok) {
+          await logAutomationEvent({
+            userId: automationUserId,
+            automationId: automation.id,
+            channel: "WHATSAPP",
+            triggerType: "DM",
+            eventType: AUTOMATION_EVENT_TYPE.IGNORED,
+            senderId,
+            status: AUTOMATION_EVENT_STATUS.INFO,
+            reason: deliveryAccess.message,
+          });
+          continue;
+        }
+
+        const prompt = automation.listener.prompt?.trim();
+        if (!prompt) {
+          continue;
+        }
+
+        const sendResult = await sendWhatsAppTextMessage(
+          integration.whatsappPhoneNumberId,
+          senderId,
+          prompt,
+          integration.token
+        );
+
+        if (sendResult.status === 200) {
+          await trackResponses(automation.id, "DM");
+          await logAutomationEvent({
+            userId: automationUserId,
+            automationId: automation.id,
+            channel: "WHATSAPP",
+            triggerType: "DM",
+            eventType: AUTOMATION_EVENT_TYPE.DM_REPLY_SENT,
+            senderId,
+            status: AUTOMATION_EVENT_STATUS.SUCCESS,
+          });
+
+          if (currentPeriod) {
+            await incrementBillingUsage(
+              automationUserId,
+              subscription?.id ?? null,
+              currentPeriod.periodStart,
+              currentPeriod.periodEnd,
+              "whatsappMessagesSent"
+            );
+          }
+
+          if (messageId) {
+            await markProcessedExternalEvent("WHATSAPP", messageId, "SUCCESS");
+          }
+
+          sentCount += 1;
         }
       }
-
-      if (messageId) {
-        await markProcessedExternalEvent("WHATSAPP", messageId, "SUCCESS");
-      }
-
-      return NextResponse.json({ message: "Message sent" }, { status: 200 });
     }
 
-    return NextResponse.json({ message: "No automation set" }, { status: 200 });
+    return NextResponse.json(
+      { message: sentCount > 0 ? "Message sent" : "Event ignored" },
+      { status: 200 }
+    );
   } catch (error) {
     logSecurityEvent("webhook", "whatsapp_handler_error", {
       reason: error instanceof Error ? error.message : "unknown_error",

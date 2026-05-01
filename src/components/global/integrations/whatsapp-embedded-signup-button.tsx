@@ -30,6 +30,8 @@ type Props = {
 
 const FACEBOOK_SDK_ID = "facebook-jssdk";
 const FACEBOOK_SDK_SRC = "https://connect.facebook.net/en_US/sdk.js";
+const FACEBOOK_SDK_TIMEOUT_MS = 15000;
+const EMBEDDED_SIGNUP_TIMEOUT_MS = 5 * 60 * 1000;
 
 const getWhatsAppSdkConfig = () => ({
   appId:
@@ -59,7 +61,7 @@ const loadFacebookSdk = async (appId: string) => {
     const previousFbAsyncInit = window.fbAsyncInit;
     const timeout = window.setTimeout(() => {
       reject(new Error("facebook_sdk_timeout"));
-    }, 15000);
+    }, FACEBOOK_SDK_TIMEOUT_MS);
 
     window.fbAsyncInit = () => {
       try {
@@ -75,6 +77,14 @@ const loadFacebookSdk = async (appId: string) => {
 
     const existing = document.getElementById(FACEBOOK_SDK_ID);
     if (existing) {
+      const interval = window.setInterval(() => {
+        if (window.FB) {
+          window.clearInterval(interval);
+          window.clearTimeout(timeout);
+          initFacebookSdk();
+          resolve();
+        }
+      }, 100);
       return;
     }
 
@@ -135,11 +145,26 @@ export default function WhatsAppEmbeddedSignupButton({
 
     setIsPending(true);
     setStatusLabel("Opening...");
+    let flowCompleted = false;
+    let signupTimeout: number | null = null;
+
+    const resetPendingState = () => {
+      setIsPending(false);
+      setStatusLabel(label);
+    };
+
+    const removeSignupListener = () => {
+      window.removeEventListener("message", handleMessage);
+      if (signupTimeout) {
+        window.clearTimeout(signupTimeout);
+        signupTimeout = null;
+      }
+    };
 
     const handleMessage = async (event: MessageEvent) => {
       if (
         typeof event.origin !== "string" ||
-        !event.origin.includes("facebook.com")
+        !/^https:\/\/(.+\.)?facebook\.com$/i.test(event.origin)
       ) {
         return;
       }
@@ -159,7 +184,8 @@ export default function WhatsAppEmbeddedSignupButton({
       }
 
       if (embeddedSignupEvent.type === "FINISH") {
-        window.removeEventListener("message", handleMessage);
+        flowCompleted = true;
+        removeSignupListener();
         setStatusLabel("Saving...");
         const phoneNumberId = embeddedSignupEvent.data?.phone_number_id;
         const wabaId = embeddedSignupEvent.data?.waba_id;
@@ -168,15 +194,23 @@ export default function WhatsAppEmbeddedSignupButton({
           toast("WhatsApp connect failed", {
             description: "Meta did not return the expected phone number details.",
           });
-          setIsPending(false);
-          setStatusLabel(label);
+          resetPendingState();
           return;
         }
 
-        const result = await completeWhatsAppEmbeddedSignup({
-          phoneNumberId,
-          wabaId,
-        });
+        let result: Awaited<ReturnType<typeof completeWhatsAppEmbeddedSignup>>;
+        try {
+          result = await completeWhatsAppEmbeddedSignup({
+            phoneNumberId,
+            wabaId,
+          });
+        } catch {
+          toast("WhatsApp connect failed", {
+            description: "The signup completed, but the app could not save it.",
+          });
+          resetPendingState();
+          return;
+        }
 
         if (result?.status === 200) {
           toast("WhatsApp connected", {
@@ -198,38 +232,57 @@ export default function WhatsAppEmbeddedSignupButton({
       }
 
       if (embeddedSignupEvent.type === "CANCEL") {
-        window.removeEventListener("message", handleMessage);
+        flowCompleted = true;
+        removeSignupListener();
         toast("WhatsApp signup cancelled", {
           description: "You can restart the Meta connection flow any time.",
         });
-        setIsPending(false);
-        setStatusLabel(label);
+        resetPendingState();
         return;
       }
 
       if (embeddedSignupEvent.type === "ERROR") {
-        window.removeEventListener("message", handleMessage);
+        flowCompleted = true;
+        removeSignupListener();
         toast("WhatsApp signup failed", {
           description: "Meta returned an error while connecting the number.",
         });
-        setIsPending(false);
-        setStatusLabel(label);
+        resetPendingState();
       }
     };
 
     try {
       await loadFacebookSdk(sdkConfig.appId);
-      window.addEventListener("message", handleMessage);
+      if (!window.FB) {
+        throw new Error("facebook_sdk_unavailable");
+      }
 
-      window.FB?.login(
+      window.addEventListener("message", handleMessage);
+      signupTimeout = window.setTimeout(() => {
+        if (flowCompleted) {
+          return;
+        }
+        removeSignupListener();
+        toast("WhatsApp signup timed out", {
+          description: "Please reopen the Meta signup window and try again.",
+        });
+        resetPendingState();
+      }, EMBEDDED_SIGNUP_TIMEOUT_MS);
+
+      window.FB.login(
         (response) => {
           if (!response.authResponse?.code && response.status !== "connected") {
-            window.removeEventListener("message", handleMessage);
-            toast("WhatsApp login cancelled", {
-              description: "Meta login was closed before setup finished.",
-            });
-            setIsPending(false);
-            setStatusLabel(label);
+            window.setTimeout(() => {
+              if (flowCompleted) {
+                return;
+              }
+
+              removeSignupListener();
+              toast("WhatsApp login cancelled", {
+                description: "Meta login was closed before setup finished.",
+              });
+              resetPendingState();
+            }, 2500);
           }
         },
         {

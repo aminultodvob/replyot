@@ -27,7 +27,8 @@ import type {
 export const matchKeyword = async (
   keyword: string,
   channel: AutomationChannel,
-  triggerType: "COMMENT" | "DM"
+  triggerType: "COMMENT" | "DM",
+  userId?: string
 ) => {
   const [match] = await db
     .select({
@@ -40,9 +41,14 @@ export const matchKeyword = async (
     .innerJoin(triggers, eq(triggers.automationId, automations.id))
     .where(
       and(
-        sql`lower(${keywords.word}) = lower(${keyword})`,
+        sql`(
+          lower(trim(${keywords.word})) = lower(trim(${keyword}))
+          or lower(${keyword}) like ('%' || lower(trim(${keywords.word})) || '%')
+        )`,
         eq(automations.channel, channel),
-        eq(triggers.type, triggerType)
+        eq(automations.active, true),
+        eq(triggers.type, triggerType),
+        userId ? eq(automations.userId, userId) : undefined
       )
     )
     .limit(1);
